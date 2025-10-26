@@ -31,3 +31,6 @@ args = [
 
 [mcp_servers.sentry]
 url = "https://mcp.sentry.dev/mcp"
+
+[mcp_servers.svelte]
+url = "https://mcp.svelte.dev/mcp"
