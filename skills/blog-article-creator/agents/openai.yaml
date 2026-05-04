@@ -1,0 +1,4 @@
+interface:
+  display_name: "Blog Article Creator"
+  short_description: "Create and publish technical blog articles"
+  default_prompt: "Use $blog-article-creator to draft and publish a technical article with correct frontmatter."
