@@ -1,0 +1,4 @@
+interface:
+  display_name: "Playwright E2E Test Writer"
+  short_description: "Playwright E2E tests with POM patterns"
+  default_prompt: "Use $playwright-e2e-test-writer to add Playwright E2E coverage for this flow."
