@@ -1,4 +1,4 @@
 interface:
-  display_name: "Blog Article Creator"
-  short_description: "Create and publish technical blog articles"
-  default_prompt: "Use $blog-article-creator to draft and publish a technical article with correct frontmatter."
+  display_name: "技術ブログ記事作成"
+  short_description: "Markdown技術記事の作成・推敲・読みやすさレビューを支援します"
+  default_prompt: "$blog-article-creator で、frontmatter が整った読みやすい技術記事の下書きを作成してください。"

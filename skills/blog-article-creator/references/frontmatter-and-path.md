@@ -1,11 +1,11 @@
-# Frontmatter And Path
+# Frontmatter とパス
 
-## Default path convention (yusuke-blog)
+## デフォルトのパス規約（yusuke-blog）
 
-- Article directory: `articles/`
-- One article per file: `articles/<slug>.md`
+- 記事ディレクトリ: `articles/`
+- 1 記事 1 ファイル: `articles/<slug>.md`
 
-## Required frontmatter keys
+## 必須 frontmatter キー
 
 ```yaml
 title: '...'
@@ -17,15 +17,14 @@ blog_published: True
 published: False
 ```
 
-## Notes
+## 補足
 
-- `blog_published` controls visibility in blog article lists.
-- `published` is a separate external-publish flag.
-- `date` should be ISO format: `YYYY-MM-DD`.
-- Keep `slug` filesystem-safe: lowercase letters, digits, hyphens.
+- `blog_published` はブログの記事一覧に表示するかどうかを制御する。
+- `published` は外部公開用の別フラグとして扱う。
+- `date` は ISO 形式の `YYYY-MM-DD` にする。
+- `slug` はファイルシステムで安全に扱える、小文字英字・数字・ハイフンに限定する。
 
-## Slug guidance
+## Slug の指針
 
-- Good: `crypto-delta-neutral-theory`
-- Avoid spaces, underscores, and uppercase letters.
-
+- 良い例: `crypto-delta-neutral-theory`
+- スペース、アンダースコア、大文字英字は避ける。

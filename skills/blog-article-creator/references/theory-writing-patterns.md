@@ -1,30 +1,29 @@
-# Theory Writing Patterns
+# 理論記事の執筆パターン
 
-Use this pattern for mathematically rigorous technical posts.
+数学的に厳密な技術記事では、この構成を使う。
 
-## Recommended structure
+## 推奨構成
 
-1. Problem statement
-2. Notation and setup
-3. Baseline model
-4. Derivation (step-by-step)
-5. Risk terms / limitations
-6. Practical implications
-7. Summary
+1. 問題設定
+2. 記法と準備
+3. 基準モデル
+4. 導出（段階的に説明）
+5. リスク項目・限界
+6. 実務上の含意
+7. まとめ
 
-## Style rules
+## 文体ルール
 
-- Define every symbol once before equations.
-- Separate approximation formulas from exact formulas.
-- Mark assumptions explicitly with bullet points.
-- State what is hedged/canceled and what residual risk remains.
-- Prefer short, composable equations over dense paragraphs.
+- 数式の前に、使う記号を一度ずつ定義する。
+- 近似式と厳密式を分けて示す。
+- 前提は箇条書きなどで明示する。
+- 何がヘッジ・相殺され、どの残余リスクが残るのかを書く。
+- 密度の高い長文より、短く組み合わせやすい式を優先する。
 
-## Common sections for quantitative finance
+## 定量ファイナンスでよく使う節
 
-- Stochastic process definition
-- PnL decomposition
-- Risk decomposition (diffusion / jump / liquidity)
-- Constraint-aware optimization
-- Failure modes in stressed markets
-
+- 確率過程の定義
+- PnL 分解
+- リスク分解（拡散・ジャンプ・流動性）
+- 制約を考慮した最適化
+- ストレス市場での失敗モード

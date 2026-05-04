@@ -1,59 +1,63 @@
 ---
 name: blog-article-creator
-description: Create, revise, and publish Markdown blog articles for repository-based technical blogs (especially yusuke-blog). Use when users ask to generate new articles, rewrite article drafts, enforce frontmatter fields (`title`, `description`, `date`, `topics`, `blog_published`, `published`), produce theory-first technical explanations, or deploy updated articles after writing.
+description: リポジトリ管理の技術ブログ、特に yusuke-blog 向けに Markdown 記事を作成・改稿・公開する。新規記事生成、記事草稿の書き直し、frontmatter フィールド（`title`, `description`, `date`, `topics`, `blog_published`, `published`）の整備、理論重視の技術解説、文章・コード・スクリーンショットを含む記事の読みやすさレビュー、執筆後のデプロイ依頼で使用する。
 ---
 
-# Blog Article Creator
+# 技術ブログ記事作成
 
-## Overview
+## 概要
 
-Create high-quality technical blog articles in Markdown with correct frontmatter, consistent structure, and optional deploy flow.
+正しい frontmatter、一貫した構成、読みやすい本文、必要に応じたデプロイ手順を備えた高品質な Markdown 技術記事を作成する。
 
-Use this workflow for article generation requests in code repositories where article files are stored on disk.
+記事ファイルをリポジトリ上のファイルとして管理している技術ブログで、記事の新規作成・改稿・読みやすさレビュー・公開を依頼されたときに使う。
 
-## Workflow
+## 作業フロー
 
-1. Confirm target repository conventions.
-2. Create or update article files under the configured article directory.
-3. Keep frontmatter complete and valid for publication filters.
-4. Write content with a clear technical structure (definitions, model, derivation, assumptions, risks, summary).
-5. Run optional build/deploy steps only when requested.
+1. 対象リポジトリの記事配置と frontmatter の規約を確認する。
+2. 設定された記事ディレクトリ配下に記事ファイルを作成または更新する。
+3. 公開フィルタで使われる frontmatter を欠けなく、妥当な値に保つ。
+4. 定義、モデル、導出、前提、リスク、まとめが追いやすい技術構成で本文を書く。
+5. 読者が迷う文章、コード、スクリーンショット、段落構成を見つけて推敲する。
+6. ビルドやデプロイはユーザーが明示的に依頼した場合だけ実行する。
 
-## Repository Convention Loading
+## 参照ファイルの読み込み
 
-Read only what is needed:
+必要なものだけを読む。
 
-- Read `references/frontmatter-and-path.md` when deciding file path, slug, and metadata keys.
-- Read `references/theory-writing-patterns.md` when the user asks for mathematically rigorous or theory-heavy writing.
-- Read `references/deploy-workflow.md` when asked to deploy after writing.
+- ファイルパス、slug、メタデータキーを決めるときは `references/frontmatter-and-path.md` を読む。
+- 数学的に厳密、または理論の比重が高い記事を求められたときは `references/theory-writing-patterns.md` を読む。
+- 文章、コード例、スクリーンショット、記事全体の読みやすさを改善するときは `references/readability-writing-patterns.md` を読む。
+- 執筆後のデプロイを依頼されたときは `references/deploy-workflow.md` を読む。
 
-## Fast Path For New Articles
+## 新規記事の高速作成
 
-For deterministic scaffolding, use:
+決定的な雛形生成には次を使う。
 
 ```bash
 python3 scripts/new_article.py \
-  --title "<title>" \
+  --title "<タイトル>" \
   --slug "<slug>" \
-  --description "<description>" \
-  --topics "topic1,topic2" \
+  --description "<説明文>" \
+  --topics "トピック1,トピック2" \
   --blog-published true \
   --published false
 ```
 
-Then expand the generated body sections with task-specific content.
+生成された本文見出しを、依頼内容に合わせて具体的に書き広げる。
 
-## Quality Rules
+## 品質ルール
 
-- Keep frontmatter and body consistent with the user request.
-- Prefer explicit assumptions over vague statements.
-- For quant/math articles, define symbols before using formulas.
-- Distinguish model assumptions from empirical claims.
-- Do not deploy unless the user requested deployment.
+- frontmatter と本文をユーザーの依頼内容に合わせる。
+- 曖昧な断定より、明示した前提に基づく記述を優先する。
+- 数理・定量記事では、数式で使う記号を先に定義する。
+- モデル上の仮定と経験的な主張を区別する。
+- 読者が手を止める原因を減らすため、文章は短く、コードは全体像から詳細へ、画像は操作順が分かる形にする。
+- ユーザーが依頼していないデプロイは実行しない。
 
-## Completion Checklist
+## 完了チェックリスト
 
-- Article file exists in the correct directory.
-- Frontmatter includes all required keys.
-- `blog_published` is set exactly as requested.
-- If deployment was requested: build, deploy, and verify article URL response.
+- 記事ファイルが正しいディレクトリに存在する。
+- frontmatter に必要なキーがすべて含まれている。
+- `blog_published` が依頼どおりの値になっている。
+- 読みやすさレビューを依頼された場合は、文章、コード、画像、構成の観点で改善済み、または残課題を明示している。
+- デプロイを依頼された場合は、ビルド、デプロイ、記事 URL の応答確認まで済ませる。

@@ -1,30 +1,29 @@
-# Deploy Workflow
+# デプロイ手順
 
-Use this only when deployment is explicitly requested.
+ユーザーが明示的にデプロイを依頼した場合だけ使う。
 
-## Authentication check
+## 認証確認
 
 ```bash
 npx wrangler whoami
 ```
 
-## Build
+## ビルド
 
 ```bash
 PUBLIC_BASE_URL=https://tech-yusuke.com npm run build
 ```
 
-## Deploy to production environment
+## 本番環境へのデプロイ
 
 ```bash
 npx wrangler deploy --env production
 ```
 
-## Verify article availability
+## 記事 URL の確認
 
 ```bash
 curl -I -s https://<worker-domain>/articles/<slug> | head -n 5
 ```
 
-Expect `HTTP/2 200`.
-
+`HTTP/2 200` が返ることを確認する。
