@@ -31,6 +31,67 @@ Zenn 記事「書籍『GitHub CI/CD実践ガイド』を読みやすくする技
 - 理解に不要な余白、隣接 UI、個人情報、通知、ブラウザ枠などのノイズを取り除く。
 - UI が変わりやすい場合でも、読者の行動を助ける画像なら掲載を優先する。
 
+## 画像内テキストと言語
+
+- 記事用に生成・編集する画像では、タイトル、軸ラベル、凡例、注釈、吹き出し、矢印ラベル、図中説明を日本語で書く。
+- コード、API 名、ライブラリ名、UI 固有の英語表記など、正確性に必要な固有名詞は原文のまま残してよい。
+- 日本語が文字化けしないよう、画像生成時は日本語フォントを明示する。
+- フォントは `/home/yusuke/.local/share/fonts/codex-japanese/IPAPGothic.ttf` を第一候補にする。存在しない場合は `/home/yusuke/.local/share/fonts/codex-japanese/IPAGothic.ttf`、それも無い場合は `/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf` を使う。
+
+Matplotlib で画像を生成する場合:
+
+```python
+from pathlib import Path
+from matplotlib import font_manager as fm
+
+FONT_CANDIDATES = [
+    "/home/yusuke/.local/share/fonts/codex-japanese/IPAPGothic.ttf",
+    "/home/yusuke/.local/share/fonts/codex-japanese/IPAGothic.ttf",
+    "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf",
+]
+FONT_PATH = next(path for path in FONT_CANDIDATES if Path(path).exists())
+fm.fontManager.addfont(FONT_PATH)
+font_prop = fm.FontProperties(fname=FONT_PATH)
+
+ax.set_title("パレート分布のローレンツ曲線", fontproperties=font_prop)
+ax.set_xlabel("累積人口シェア p", fontproperties=font_prop)
+ax.set_ylabel("累積所得シェア L(p)", fontproperties=font_prop)
+ax.legend(prop=font_prop)
+```
+
+Pillow で注釈を追加する場合:
+
+```python
+from PIL import ImageFont
+
+font = ImageFont.truetype(FONT_PATH, size=28)
+draw.text((x, y), "注目する箇所", font=font, fill=(20, 20, 20))
+```
+
+## スクリーンショット処理で使う推奨ツール
+
+- Web 画面を再現して撮影する場合は Playwright を使う。
+- 既存画像のサイズ確認、トリミング、注釈付けには Python + Pillow を優先する。
+- Pillow が使えない場合は ImageMagick の `identify` / `magick` を使う。
+- 画像内テキストの確認が必要な場合だけ OCR を使う。既存環境に `tesseract` がなければ、無理に導入せず目視確認を優先する。
+- 画像圧縮は既存プロジェクトに `pngquant`、`oxipng`、`sharp` などがある場合だけ使う。新規依存は勝手に追加しない。
+- 画像編集を実行するときは元画像を上書きせず、別名で出力して差し替え可否を確認する。
+
+## スクリーンショット付き画像での Codex 処理
+
+サンプル画像: `../assets/readability-code-element-sample.png`
+
+1. 添付画像またはローカル画像を確認し、必要なら `view_image`、Pillow、ImageMagick で観察する。
+2. `file`、Pillow、または ImageMagick で画像形式、幅、高さ、ファイルサイズを確認する。
+3. サンプル画像のように、本文で再掲したコード・図の直後に詳細説明が置かれているか確認する。
+4. 画像内の矢印、強調枠、注釈テキストが、本文で注目してほしい箇所へ自然に視線誘導しているか確認する。
+5. 画像だけを見ても「どこが再掲部分か」「どこを読むべきか」が推測できるか確認する。
+6. 本文だけを読んでも再掲箇所の意味が分かるか、画像だけに依存した説明になっていないか確認する。
+7. 本文と画像のどちらか片方にしかない情報があれば、もう片方へ補う。
+8. 余白、無関係な UI、通知、個人情報、ブラウザ枠、画面の切れ端など読者の注意を逸らす要素を指摘する。
+9. 改善案では、トリミング範囲、番号・枠・矢印・注釈を置く位置、本文の修正文を具体的に書く。
+10. 実際に画像編集を依頼された場合だけ、Pillow または ImageMagick で編集する。レビューだけなら画像ファイルは変更せず、改善指示として返す。
+
 ## 構成と推敲
 
 - 全体像を先に示し、その後で詳細へ進む。

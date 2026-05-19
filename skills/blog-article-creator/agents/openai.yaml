@@ -1,4 +1,4 @@
 interface:
   display_name: "技術ブログ記事作成"
-  short_description: "Markdown技術記事の作成・推敲・読みやすさレビューを支援します"
-  default_prompt: "$blog-article-creator で、frontmatter が整った読みやすい技術記事の下書きを作成してください。"
+  short_description: "数式・図解を含むMarkdown技術記事の作成と推敲を支援します"
+  default_prompt: "$blog-article-creator で、frontmatter と数式・図解が整った読みやすい技術記事の下書きを作成してください。"
