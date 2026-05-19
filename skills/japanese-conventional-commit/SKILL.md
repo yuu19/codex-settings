@@ -1,21 +1,20 @@
 ---
+description: Conventional Commits 形式で、日本語の件名・本文を持つコミットメッセージを作成またはレビューする。git diff/status/staged 差分、コミットタイトル、PR 向けコミット、日本語のコミットメッセージ規約について、作成・修正・検証・選択を求められたときに使う。
 name: japanese-conventional-commit
-description: Create or review Git commit messages in Conventional Commits format with Japanese subject/body text. Use when the user asks to write, fix, validate, or choose a commit message, including requests involving git diff/status/staged changes, commit titles, PR-ready commits, or Japanese commit-message conventions.
 ---
-
 # Japanese Conventional Commit
 
-## Core Rules
+## 基本ルール
 
-- Write commit messages in Conventional Commits format.
-- Use `type` and add `scope` when it improves clarity.
-- Write the subject and body explanations in Japanese.
-- Keep each commit focused on one purpose.
-- Add a body when the change is not self-evident; explain both what changed and why.
+- コミットメッセージは Conventional Commits 形式で書く。
+- `type` を必ず使い、明確さが増す場合は `scope` を付ける。
+- 件名と本文の説明は日本語で書く。
+- 1 つのコミットは 1 つの目的に絞る。
+- 変更内容が件名だけでは伝わらない場合は本文を追加し、何を変えたかと、なぜ変えたかの両方を書く。
 
-## Format
+## 形式
 
-Use this structure:
+基本形:
 
 ```text
 type(scope): 日本語の件名
@@ -23,54 +22,54 @@ type(scope): 日本語の件名
 日本語の本文。変更内容と変更理由を書く。
 ```
 
-Omit `scope` when it would be noisy:
+`scope` がかえってノイズになる場合は省略する:
 
 ```text
 type: 日本語の件名
 ```
 
-## Workflow
+## 作業手順
 
-1. Inspect the actual change when available, preferring `git status --short`, `git diff --cached`, then `git diff`.
-2. Identify one primary purpose for the commit. If the change mixes unrelated purposes, suggest splitting commits.
-3. Choose a Conventional Commits `type`.
-4. Add a concise `scope` when a package, app, domain, or subsystem is clear.
-5. Write a short Japanese subject in imperative or noun-style project convention. Avoid a trailing period.
-6. Add a Japanese body when context, motivation, risk, migration, or non-obvious behavior matters.
+1. 実際の変更を確認できる場合は、`git status --short`、`git diff --cached`、`git diff` の順で確認する。
+2. コミットの主目的を 1 つに絞る。無関係な目的が混ざっている場合は、コミット分割を提案する。
+3. Conventional Commits の `type` を選ぶ。
+4. パッケージ、アプリ、ドメイン、サブシステムが明確な場合は、短い `scope` を付ける。
+5. 件名は日本語で短く書く。命令形またはプロジェクト慣習に合う名詞句にし、末尾の句点は付けない。
+6. 背景、動機、リスク、移行、分かりにくい挙動がある場合は、日本語の本文を追加する。
 
-## Type Selection
+## type の選び方
 
-- `feat`: user-visible feature or capability.
-- `fix`: bug fix or incorrect behavior correction.
-- `docs`: documentation-only change.
-- `test`: test-only change.
-- `refactor`: internal restructure without behavior change.
-- `style`: formatting-only change.
-- `chore`: tooling, repository maintenance, generated metadata, or non-product task.
-- `ci`: CI/CD workflow change.
-- `build`: build system or dependency packaging change.
-- `perf`: performance improvement.
-- `revert`: revert a previous commit.
+- `feat`: ユーザーから見える機能や能力の追加。
+- `fix`: バグ修正や誤った挙動の修正。
+- `docs`: ドキュメントのみの変更。
+- `test`: テストのみの変更。
+- `refactor`: 挙動を変えない内部構造の整理。
+- `style`: フォーマットのみの変更。
+- `chore`: ツール、リポジトリ保守、生成メタデータ、プロダクト外の作業。
+- `ci`: CI/CD ワークフローの変更。
+- `build`: ビルドシステムや依存関係、パッケージングの変更。
+- `perf`: パフォーマンス改善。
+- `revert`: 過去のコミットの取り消し。
 
-## Scope Guidance
+## scope の考え方
 
-Prefer a specific, stable scope when useful:
+有用な場合は、具体的で安定した `scope` を選ぶ:
 
-- App/package: `backend`, `web`, `mobile`, `docs`.
-- Domain: `billing`, `auth`, `booking`, `contracts`, `stripe`.
-- Tooling: `lint`, `deps`, `ci`, `speckit`.
+- アプリやパッケージ: `backend`, `web`, `mobile`, `docs`
+- ドメイン: `billing`, `auth`, `booking`, `contracts`, `stripe`
+- ツール: `lint`, `deps`, `ci`, `speckit`
 
-Avoid scopes that duplicate the type or are too broad, such as `app`, `code`, or `changes`.
+`type` と重複する `scope` や、`app`, `code`, `changes` のように広すぎる `scope` は避ける。
 
-## Body Guidance
+## 本文の考え方
 
-Add a body when:
+次の場合は本文を追加する:
 
-- The reason is not obvious from the subject.
-- The change affects behavior, data, migration, deployment, billing, auth, security, or user workflows.
-- The commit intentionally leaves known limitations or follow-up work.
+- 件名だけでは理由が分からない。
+- 挙動、データ、移行、デプロイ、課金、認証・認可、セキュリティ、ユーザー操作に影響する。
+- 既知の制限や後続作業を意図的に残している。
 
-Keep the body focused:
+本文は要点に絞る:
 
 ```text
 feat(billing): 組織単位の契約状態を表示する
@@ -79,12 +78,27 @@ owner が現在のプラン、トライアル期限、支払い方法の状態�
 契約操作の権限を運用ロールと分離し、誤って管理者が支払い設定を変更しないようにするため。
 ```
 
-## Validation
+## CLI でコミットする場合の注意
 
-Before returning a final message, check:
+シェルからコミットを作るときは、1 つの `-m` 引数の中に `\n`、`\n\n` などのエスケープされた改行文字列を埋め込まない。Git はそれらを改行ではなく文字列としてコミットメッセージに保存する。
 
-- The first line matches `type(scope): 件名` or `type: 件名`.
-- `type` is a valid Conventional Commits type.
-- Subject/body text is Japanese, except code identifiers and product names.
-- The message describes one commit purpose.
-- A body is present when the change needs rationale.
+段落ごとに `-m` 引数を分ける:
+
+```bash
+git commit -m "type(scope): 日本語の件名" \
+  -m "本文の第1段落を書く。" \
+  -m "本文の第2段落を書く。"
+```
+
+`git commit --amend` の場合も同じルールに従う。
+
+## 検証
+
+最終回答の前に次を確認する:
+
+- 1 行目が `type(scope): 件名` または `type: 件名` の形式になっている。
+- `type` が Conventional Commits の有効な種類になっている。
+- コード識別子やプロダクト名を除き、件名と本文が日本語になっている。
+- メッセージが 1 つのコミット目的を説明している。
+- 理由の説明が必要な変更では、本文が付いている。
+- `git log -1 --pretty=raw` で件名や本文にリテラルの `\n` や `\n\n` が入っていない。
