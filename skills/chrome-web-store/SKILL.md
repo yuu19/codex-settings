@@ -1,5 +1,5 @@
 ---
-name: roletray-chrome-web-store
+name: chrome-web-store
 description: Prepare or audit Chrome Web Store Developer Dashboard inputs for Chrome extensions, including listing fields, privacy declarations, store assets, extension ID wiring, deployment follow-up, and final pre-submit checks. Use when the user asks to enter, verify, document, repeat, or update Chrome Web Store settings for any Chrome extension; also supports the RoleTray preset in references/store-inputs.md. Do not submit for review unless the user explicitly asks for submission.
 ---
 
