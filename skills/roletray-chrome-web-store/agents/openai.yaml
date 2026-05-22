@@ -1,0 +1,4 @@
+interface:
+  display_name: "RoleTray Chrome Web Store"
+  short_description: "RoleTrayのChrome Web Store入力手順"
+  default_prompt: "Use $roletray-chrome-web-store to prepare RoleTray Chrome Web Store listing and privacy fields."
