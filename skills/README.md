@@ -10,7 +10,7 @@
 | `docs-japanese-writing` | 日本語ドキュメント、README、運用ガイド、プロダクト挙動説明を業務読者に伝わる形で作成・改訂します。 |
 | `japanese-conventional-commit` | Conventional Commits 形式で、日本語の件名・本文を持つコミットメッセージを作成・レビューします。 |
 | `playwright-e2e-test-writer` | TypeScript Web アプリ向けに、Playwright E2E テスト、Page Object、fixtures、setup helper を追加・改善します。 |
-| `roletray-chrome-web-store` | RoleTray の Chrome Web Store 掲載情報、プライバシー申告、拡張 ID 反映手順を確認・再入力します。 |
+| `roletray-chrome-web-store` | Chrome 拡張の Web Store 掲載情報、プライバシー申告、拡張 ID 反映手順を確認・再入力します。RoleTray の入力値はプリセットとして参照できます。 |
 | `saas-user-manual-screenshot-writer` | SaaS のエンドユーザー向け日本語マニュアルを、実画面スクリーンショット付きで作成・更新します。 |
 | `blog-article-creator` | リポジトリ管理の技術ブログ記事を、frontmatter と本文構成を整えて作成・改稿します。 |
 

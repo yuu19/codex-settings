@@ -1,8 +1,47 @@
-# RoleTray Chrome Web Store Inputs
+# Chrome Web Store Inputs Reference
 
-Use these values for the RoleTray Chrome Web Store draft unless the repo or user gives a newer value.
+This file is an example and RoleTray preset. For any non-RoleTray extension, collect equivalent values from that repository and user instructions instead of copying these values.
 
-## Item Identity
+## Generic Input Checklist
+
+Collect these fields for any Chrome extension:
+
+- Extension name
+- Package summary
+- Detailed description
+- Category and language
+- Homepage URL
+- Support URL
+- Privacy policy URL
+- Public publisher contact email
+- Built ZIP path
+- Extension item ID after draft upload
+- Store asset paths: 128x128 icon, screenshots, optional promotional tiles
+- Single-purpose statement
+- Permission reasons for every permission and host permission
+- Data-use categories that match the implementation
+- Remote-code declaration
+- Backend/web origin settings that must allow `chrome-extension://<id>`
+
+Use repository evidence for all values. For permissions and data use, inspect manifest, content scripts, background/service worker code, API/auth clients, storage usage, and privacy policy.
+
+## Generic Pre-Submit Stop Point
+
+Before the user submits, verify:
+
+- `審査のため送信` is enabled.
+- No visible "公開できません" error list remains.
+- Any backend or web app that depends on the extension ID has been updated and deployed.
+- Production health checks pass where applicable.
+- Git status is clean and pushed if the user requested commit/push.
+
+Stop there unless the user explicitly asks Codex to submit the item.
+
+## RoleTray Preset
+
+Use these values only for the RoleTray Chrome Web Store draft unless the repo or user gives a newer value.
+
+### Item Identity
 
 - Developer Dashboard publisher ID: `401a5388-debb-4878-ae59-4df40c823fba`
 - Extension item ID: `aeafpambpfjdifaihjlfejfdjeonjohp`
@@ -10,7 +49,7 @@ Use these values for the RoleTray Chrome Web Store draft unless the repo or user
 - Status during preparation: `ドラフト`
 - ZIP path: `apps/extension/.output/roletrayextension-0.1.0-chrome.zip`
 
-## Listing
+### Listing
 
 - Package title: `RoleTray`
 - Package summary: `Save job posts and track application status from the browser.`
@@ -35,7 +74,7 @@ RoleTrayは、求人ページを見ながらChromeのサイドパネルまたは
 保存した求人情報は、本人のブラウザ内またはログイン時のRoleTrayアカウントに保存されます。求人応募の進捗管理を、求人サイトを横断して一元化できます。
 ```
 
-## Assets
+### Assets
 
 - Shop icon: `apps/extension/public/icons/icon-128.png`
 - Screenshot: `apps/extension/store-assets/screenshot-1280x800.png`
@@ -44,7 +83,7 @@ RoleTrayは、求人ページを見ながらChromeのサイドパネルまたは
 
 Chrome Web Store screenshot/tile uploads must be JPEG or 24-bit PNG with no alpha. Verify dimensions with `identify`.
 
-## Privacy
+### Privacy
 
 - Privacy policy URL: `https://roletray.com/privacy`
 - Public contact email: `privacy@roletray.com`
@@ -89,7 +128,7 @@ Required declarations to check:
 - 私はアイテムの唯一の目的と関係のない目的でユーザーデータを使用または転送しません
 - 私は信用力を判断する目的または融資目的でユーザーデータを使用または転送しません
 
-## Worker Origin
+### Worker Origin
 
 Production `apps/worker/wrangler.jsonc` should contain:
 
@@ -98,14 +137,3 @@ Production `apps/worker/wrangler.jsonc` should contain:
 ```
 
 Production should only trust the fixed extension origin. Dynamic `chrome-extension://...` origins should be limited to local development or E2E.
-
-## Pre-Submit Stop Point
-
-Before the user submits, verify:
-
-- `審査のため送信` is enabled.
-- No visible "公開できません" error list remains.
-- Worker production deploy is complete and `/health` returns `200`.
-- Git status is clean and pushed if the user requested commit/push.
-
-Stop there unless the user explicitly asks Codex to submit the item.
