@@ -6,6 +6,8 @@ This file is an example and RoleTray preset. For any non-RoleTray extension, col
 
 Collect these fields for any Chrome extension:
 
+- Chrome Web Store publisher ID
+- Chrome Web Store extension item ID after initial Dashboard creation
 - Extension name
 - Package summary
 - Detailed description
@@ -22,12 +24,27 @@ Collect these fields for any Chrome extension:
 - Data-use categories that match the implementation
 - Remote-code declaration
 - Backend/web origin settings that must allow `chrome-extension://<id>`
+- Intended release path: upload only, submit for automatic publication, or submit for staged publication
+- Approved API authentication model: service account or OAuth 2.0 secret store
 
 Use repository evidence for all values. For permissions and data use, inspect manifest, content scripts, background/service worker code, API/auth clients, storage usage, and privacy policy.
 
+## Generic API-First Release Check
+
+For an existing item, use Chrome Web Store API v2 for package upload and status retrieval. Use the Dashboard only when listing, assets, privacy, distribution, or visibility must change.
+
+Before an API upload, verify:
+
+- Publisher ID and extension item ID match the target project.
+- The ZIP manifest version is higher than the pending and published versions returned by `fetchStatus`.
+- Repository checks and package inspection pass.
+- Credentials remain in the approved secret store and are not printed.
+
+After upload, poll `fetchStatus` until processing completes and confirm the returned version matches the ZIP. Uploading alone does not submit the item for review.
+
 ## Generic Pre-Submit Stop Point
 
-Before the user submits, verify:
+If the user will submit in the Dashboard, verify:
 
 - `審査のため送信` is enabled.
 - No visible "公開できません" error list remains.
@@ -36,6 +53,8 @@ Before the user submits, verify:
 - Git status is clean and pushed if the user requested commit/push.
 
 Stop there unless the user explicitly asks Codex to submit the item.
+
+If the user explicitly asks Codex to submit through API v2, confirm `DEFAULT_PUBLISH` or `STAGED_PUBLISH`, call `publish` with `blockOnWarnings: true`, then verify the resulting state with `fetchStatus`. `publish` is never a dry-run.
 
 ## RoleTray Preset
 
@@ -47,7 +66,9 @@ Use these values only for the RoleTray Chrome Web Store draft unless the repo or
 - Extension item ID: `aeafpambpfjdifaihjlfejfdjeonjohp`
 - Item name: `RoleTray`
 - Status during preparation: `既存アイテムの更新準備`
-- ZIP path: `apps/extension/.output/roletrayextension-0.1.4-chrome.zip`
+- ZIP path pattern: `apps/extension/.output/roletrayextension-<manifest-version>-chrome.zip`
+
+These publisher and item IDs are suitable for API v2 paths. Re-check the live repository and current release artifact before each operation. Never store API credentials in this preset.
 
 ### Listing
 

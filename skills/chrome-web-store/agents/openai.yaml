@@ -1,4 +1,4 @@
 interface:
-  display_name: "Chrome Web Store Prep"
-  short_description: "Chrome拡張のStore入力と審査準備"
-  default_prompt: "Use $chrome-web-store to prepare Chrome Web Store listing and privacy fields for this extension."
+  display_name: "Chrome Web Store Release"
+  short_description: "Chrome Web Store API優先のリリース運用"
+  default_prompt: "Use $chrome-web-store to manage this extension release with Chrome Web Store API v2 first and Developer Dashboard fallback only where required."
