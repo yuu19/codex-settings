@@ -1,0 +1,4 @@
+interface:
+  display_name: "Create ER Reference HTML"
+  short_description: "Build standalone ER reference HTML docs"
+  default_prompt: "Use $create-er-reference-html to create an offline ER reference HTML from schema notes without adding a Prisma schema draft."

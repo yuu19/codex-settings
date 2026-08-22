@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{TITLE}}</title>
+<style>
+:root {
+  --bg: #0d1117;
+  --bg2: #161b22;
+  --bg3: #1c2230;
+  --bg4: #21273a;
+  --border: #2a3245;
+  --border2: #374260;
+  --text: #e0e6f0;
+  --text2: #9aa8c7;
+  --text3: #5d6b88;
+  --accent: #58a6ff;
+  --warn: #f0a020;
+  --warn-bg: #1a1500;
+  --warn-bd: #3a2e00;
+  --success: #56d49a;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans JP", "Yu Gothic UI", "Meiryo", sans-serif;
+  --radius: 10px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; background: var(--bg); }
+body { min-height: 100vh; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 13px; }
+header {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 0 28px;
+  background: rgba(13,17,23,.94); border-bottom: 1px solid var(--border);
+}
+.logo { font-family: var(--mono); font-size: 14px; font-weight: 700; }
+.logo span { color: var(--accent); }
+.v-badge, .pill {
+  font-family: var(--mono); font-size: 10px; color: var(--text2);
+  background: var(--bg3); border: 1px solid var(--border2); border-radius: 999px; padding: 3px 8px;
+}
+.v-badge { border-radius: 4px; }
+.summary { display: flex; gap: 10px; margin-left: auto; align-items: center; flex-wrap: wrap; }
+.pill.warn { color: var(--warn); border-color: var(--warn-bd); background: var(--warn-bg); }
+.layout { display: grid; grid-template-columns: 260px 1fr; min-height: calc(100vh - 52px); }
+aside {
+  position: sticky; top: 52px; height: calc(100vh - 52px); overflow-y: auto;
+  border-right: 1px solid var(--border); padding: 20px 0;
+}
+.sb-section { padding: 0 16px; margin-bottom: 6px; }
+.sb-label {
+  font-size: 9px; font-family: var(--mono); color: var(--text3); letter-spacing: .12em;
+  text-transform: uppercase; margin-bottom: 4px; padding: 0 6px;
+}
+.sb-link {
+  display: flex; align-items: center; gap: 7px; padding: 6px 8px; border-radius: 6px;
+  text-decoration: none; color: var(--text2); font-size: 12px; font-family: var(--mono);
+}
+.sb-link:hover { background: var(--bg3); color: var(--text); }
+.sb-link.warn { color: var(--warn); }
+.sb-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; background: var(--border2); }
+.sb-link.warn .sb-dot { background: var(--warn); }
+.sb-tag { margin-left: auto; font-size: 9px; color: var(--warn); }
+.sb-divider { margin: 10px 16px; border: none; border-top: 1px solid var(--border); }
+main { padding: 28px 36px; overflow-y: auto; }
+.tab-input { position: absolute; opacity: 0; pointer-events: none; }
+.tabbar { display: flex; gap: 2px; flex-wrap: wrap; margin-bottom: 22px; }
+.tab {
+  padding: 6px 16px; border-radius: 6px; font-family: var(--mono); font-size: 12px;
+  cursor: pointer; color: var(--text2); border: 1px solid transparent;
+}
+.tab:hover { background: var(--bg3); color: var(--text); }
+#tab-tables:checked ~ .tabbar label[for="tab-tables"],
+#tab-relations:checked ~ .tabbar label[for="tab-relations"],
+#tab-diagram:checked ~ .tabbar label[for="tab-diagram"],
+#tab-source:checked ~ .tabbar label[for="tab-source"] {
+  background: var(--bg3); border-color: var(--border2); color: var(--text);
+}
+.pane { display: none; }
+#tab-tables:checked ~ .panes #pane-tables,
+#tab-relations:checked ~ .panes #pane-relations,
+#tab-diagram:checked ~ .panes #pane-diagram,
+#tab-source:checked ~ .panes #pane-source { display: block; }
+.sec-title {
+  font-size: 10px; font-family: var(--mono); color: var(--text3); letter-spacing: .1em;
+  text-transform: uppercase; margin-bottom: 18px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
+}
+.tables-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(430px, 1fr)); gap: 18px; margin-bottom: 48px; }
+.tcard { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--bg2); }
+.tcard.has-legacy { border-color: var(--warn-bd); }
+.tcard-header { display: flex; align-items: center; gap: 8px; padding: 9px 14px; border-bottom: 1px solid var(--border); background: var(--bg3); }
+.tname { font-family: var(--mono); font-size: 14px; font-weight: 700; color: var(--accent); }
+.tcard-badges { display: flex; gap: 5px; margin-left: auto; align-items: center; }
+.tbadge { font-size: 9px; font-family: var(--mono); padding: 2px 6px; border-radius: 3px; background: var(--bg4); color: var(--text3); border: 1px solid var(--border); }
+.tbadge.legacy { background: var(--warn-bg); color: var(--warn); border-color: var(--warn-bd); }
+.col-header, .frow { display: grid; grid-template-columns: 155px 90px 1fr; }
+.col-header {
+  padding: 5px 14px; font-size: 9px; font-family: var(--mono); color: var(--text3);
+  letter-spacing: .06em; text-transform: uppercase; border-bottom: 1px solid var(--border);
+}
+.frow { padding: 6px 14px; font-size: 12px; border-bottom: 1px solid var(--border); align-items: baseline; }
+.frow:last-child { border-bottom: none; }
+.frow.legacy { background: var(--warn-bg); }
+.frow.truth { background: rgba(86,212,154,.06); }
+.fname { font-family: var(--mono); font-size: 11px; color: var(--text); word-break: break-all; line-height: 1.5; }
+.ftag { display: inline-block; font-family: var(--mono); font-size: 9px; padding: 1px 4px; border-radius: 3px; margin-left: 3px; vertical-align: middle; }
+.tag-pk { background: rgba(88,166,255,.12); color: #79b8ff; border: 1px solid rgba(88,166,255,.25); }
+.tag-fk { background: rgba(86,212,154,.1); color: var(--success); border: 1px solid rgba(86,212,154,.2); }
+.tag-uk { background: rgba(210,153,255,.1); color: #d2a8ff; border: 1px solid rgba(210,153,255,.2); }
+.ftype { font-family: var(--mono); font-size: 10px; color: var(--text3); }
+.fdesc { font-size: 11px; color: var(--text2); line-height: 1.45; }
+.legacy-divider {
+  padding: 5px 14px; font-size: 9px; font-family: var(--mono); color: var(--warn);
+  letter-spacing: .06em; text-transform: uppercase; background: var(--warn-bg);
+  border-top: 1px solid var(--warn-bd); border-bottom: 1px solid var(--warn-bd);
+}
+.rel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(430px, 1fr)); gap: 8px; }
+.rel-row {
+  display: flex; align-items: center; gap: 8px; padding: 9px 12px;
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+  font-family: var(--mono); font-size: 11px;
+}
+.rel-row.legacy { border-color: var(--warn-bd); background: var(--warn-bg); }
+.rel-entity { color: var(--accent); white-space: nowrap; }
+.rel-conn { color: var(--text3); white-space: nowrap; font-size: 10px; }
+.rel-note { margin-left: auto; font-size: 10px; color: var(--text3); text-align: right; line-height: 1.4; }
+.rel-row.legacy .rel-note { color: var(--warn); }
+.diagram-help { margin-bottom: 10px; color: var(--text3); font-size: 11px; line-height: 1.6; }
+#diagram-scroll { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; overflow: auto; min-height: 420px; }
+.er-svg { width: 980px; height: auto; max-width: none; display: block; }
+.edge { fill: none; stroke: #53617d; stroke-width: 1.5; opacity: .85; }
+.node-box { fill: #1c2230; stroke: #374260; stroke-width: 1.2; }
+.node-title { font-family: var(--mono); font-size: 14px; font-weight: 700; fill: #e0e6f0; }
+.node-sub, .node-meta, .node-fk { font-family: var(--mono); font-size: 10px; fill: #9aa8c7; }
+.node-meta { fill: #79b8ff; }
+.node-fk { fill: var(--success); }
+.codebox {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px; overflow: auto; color: var(--text2); font-family: var(--mono); font-size: 11px; line-height: 1.6;
+}
+.copy-note { color: var(--text3); font-size: 11px; margin-bottom: 12px; line-height: 1.6; }
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  aside { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+  main { padding: 20px; }
+  .tables-grid, .rel-grid { grid-template-columns: 1fr; }
+  .summary { display: none; }
+}
+@media print {
+  header, aside, .tabbar { display: none; }
+  .layout { display: block; }
+  main { padding: 0; }
+  .pane { display: block !important; page-break-after: always; }
+  body { background: #fff; color: #111; }
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">{{SYSTEM_NAME}} <span>/</span> schema</div>
+  <div class="v-badge">{{VERSION_BADGE}}</div>
+  <div class="summary">
+    <div class="pill">外部リソースなし</div>
+    <div class="pill">{{TABLE_COUNT}} tables</div>
+    <div class="pill">{{RELATION_COUNT}} relations</div>
+    <div class="pill warn">{{LEGACY_SUMMARY}}</div>
+  </div>
+</header>
+
+<div class="layout">
+  <aside>
+    {{SIDEBAR_GROUPS}}
+  </aside>
+
+  <main>
+    <section class="tabs">
+      <input class="tab-input" type="radio" name="tabs" id="tab-tables" checked>
+      <input class="tab-input" type="radio" name="tabs" id="tab-relations">
+      <input class="tab-input" type="radio" name="tabs" id="tab-diagram">
+      <input class="tab-input" type="radio" name="tabs" id="tab-source">
+
+      <div class="tabbar">
+        <label class="tab" for="tab-tables">テーブル定義</label>
+        <label class="tab" for="tab-relations">リレーション</label>
+        <label class="tab" for="tab-diagram">ER図</label>
+        <label class="tab" for="tab-source">Mermaidソース</label>
+      </div>
+
+      <div class="panes">
+        <div class="pane" id="pane-tables">
+          <div class="sec-title">Table definitions — {{TABLE_COUNT}} tables</div>
+          <div class="tables-grid">
+            {{TABLE_CARDS}}
+          </div>
+        </div>
+
+        <div class="pane" id="pane-relations">
+          <div class="sec-title">Relations — {{RELATION_COUNT}} total</div>
+          <div class="rel-grid">
+            {{RELATION_ROWS}}
+          </div>
+        </div>
+
+        <div class="pane" id="pane-diagram">
+          <div class="sec-title">ER diagram — static SVG / no external resources</div>
+          <div class="diagram-help">
+            ER図はHTML内に埋め込んだ静的SVGです。詳細なカラム定義は「テーブル定義」、元のMermaid定義は「Mermaidソース」で確認できます。
+          </div>
+          <div id="diagram-scroll">
+            {{INLINE_SVG}}
+          </div>
+        </div>
+
+        <div class="pane" id="pane-source">
+          <div class="sec-title">Mermaid source</div>
+          <div class="copy-note">以下は元のMermaid定義です。必要に応じて選択してコピーしてください。</div>
+          <pre class="codebox" id="source-code">{{MERMAID_SOURCE}}</pre>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+</body>
+</html>
