@@ -1,0 +1,68 @@
+schema_version = 1
+minimum_codex_version = "0.148.0"
+
+[capabilities.core]
+default = true
+config_files = ["config.toml"]
+
+[capabilities.browser]
+default = false
+config_files = ["config/browser.toml"]
+
+[[skills]]
+name = "blog-article-creator"
+path = "skills/blog-article-creator"
+capability = "core"
+
+[[skills]]
+name = "create-er-reference-html"
+path = "skills/create-er-reference-html"
+capability = "core"
+
+[[skills]]
+name = "docs-japanese-writing"
+path = "skills/docs-japanese-writing"
+capability = "core"
+
+[[skills]]
+name = "japanese-conventional-commit"
+path = "skills/japanese-conventional-commit"
+capability = "core"
+
+[[skills]]
+name = "playwright-e2e-test-writer"
+path = "skills/playwright-e2e-test-writer"
+capability = "core"
+
+[[skills]]
+name = "ts-documentation"
+path = "skills/ts-documentation"
+capability = "core"
+
+[[skills]]
+name = "chrome-web-store"
+path = "skills/chrome-web-store"
+capability = "browser"
+
+[[skills]]
+name = "saas-user-manual-screenshot-writer"
+path = "skills/saas-user-manual-screenshot-writer"
+capability = "browser"
+
+[[packages]]
+name = "@playwright/mcp"
+version = "0.0.79"
+capability = "browser"
+
+[[packages]]
+name = "chrome-devtools-mcp"
+version = "1.7.0"
+capability = "browser"
+
+[[config_migrations]]
+path = "mcp_servers.context7.command"
+expected_value = "npx"
+
+[[config_migrations]]
+path = "mcp_servers.context7.args"
+expected_value = ["-y", "@upstash/context7-mcp@latest"]

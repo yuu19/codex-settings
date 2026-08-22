@@ -1,20 +1,18 @@
-model = "gpt-5.1-codex-max"
-model_reasoning_effort = "xhigh"
+# Portable Codex defaults. Machine-, account-, security-, and runtime-specific state is excluded.
+model = "gpt-5.6-sol"
+model_reasoning_effort = "high"
+plan_mode_reasoning_effort = "xhigh"
 hide_agent_reasoning = true
-network_access = true
+personality = "pragmatic"
 
 [features]
-rmcp_client = true
-streamable_shell = true          # enable the streamable exec tool
-web_search_request = true        # allow the model to request web searches
+memories = true
 
-[mcp_servers.playwright]
-command = "npx"
-args = ["@playwright/mcp@latest", "--no-sandbox", "--isolated"]
+[mcp_servers.better-auth]
+url = "https://mcp.inkeep.com/better-auth/mcp"
 
 [mcp_servers.context7]
-command = "npx"
-args = ["-y", "@upstash/context7-mcp@latest"]
+url = "https://mcp.context7.com/mcp"
 
 [mcp_servers.deepwiki]
 url = "https://mcp.deepwiki.com/mcp"
@@ -31,14 +29,11 @@ url = "https://builds.mcp.cloudflare.com/mcp"
 [mcp_servers.cloudflare-observability]
 url = "https://observability.mcp.cloudflare.com/mcp"
 
-[mcp_servers.chrome-devtools]
-command = "npx"
-args = [
-  "chrome-devtools-mcp@latest"
-]
-
 [mcp_servers.sentry]
 url = "https://mcp.sentry.dev/mcp"
 
 [mcp_servers.svelte]
 url = "https://mcp.svelte.dev/mcp"
+
+[mcp_servers.stripe]
+url = "https://mcp.stripe.com"

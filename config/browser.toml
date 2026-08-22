@@ -1,0 +1,11 @@
+# Optional browser capability. Local packages are pinned for reproducible setup.
+[mcp_servers.playwright]
+command = "npx"
+args = ["--yes", "@playwright/mcp@0.0.79", "--no-sandbox", "--isolated"]
+
+[mcp_servers.chrome-devtools]
+command = "npx"
+args = ["--yes", "chrome-devtools-mcp@1.7.0"]
+
+[mcp_servers.cloudflare-browser-rendering]
+url = "https://browser.mcp.cloudflare.com/mcp"
