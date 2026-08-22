@@ -46,8 +46,8 @@ Use these values only for the RoleTray Chrome Web Store draft unless the repo or
 - Developer Dashboard publisher ID: `401a5388-debb-4878-ae59-4df40c823fba`
 - Extension item ID: `aeafpambpfjdifaihjlfejfdjeonjohp`
 - Item name: `RoleTray`
-- Status during preparation: `ドラフト`
-- ZIP path: `apps/extension/.output/roletrayextension-0.1.0-chrome.zip`
+- Status during preparation: `既存アイテムの更新準備`
+- ZIP path: `apps/extension/.output/roletrayextension-0.1.4-chrome.zip`
 
 ### Listing
 
@@ -68,10 +68,10 @@ RoleTrayは、求人ページを見ながらChromeのサイドパネルまたは
 - 求人ページのタイトル、会社名、URLなどを読み取り、保存フォームに反映
 - サイドパネルから求人をすばやく保存
 - 応募状況、メモ、タグ、勤務地、給与などを整理
-- RoleTrayアカウントでログインするとWebダッシュボードと同期
-- ローカル保存でも利用可能
+- RoleTrayアカウントでログインし、Webダッシュボードとクラウド同期
+- 応募期限の前日18:00と当日9:00にアプリ内通知・ブラウザ通知でリマインド
 
-保存した求人情報は、本人のブラウザ内またはログイン時のRoleTrayアカウントに保存されます。求人応募の進捗管理を、求人サイトを横断して一元化できます。
+保存した求人情報は、本人のRoleTrayアカウントに紐づくRoleTrayクラウドに保存されます。求人応募の進捗管理を、求人サイトを横断して一元化できます。
 ```
 
 ### Assets
@@ -100,27 +100,39 @@ Permission reasons:
 
 ```text
 activeTab:
-ユーザーが現在開いている求人ページを明示的に保存するときに、現在のタブのタイトル、URL、ページ内の求人情報を取得して保存フォームに反映するため。
+ユーザーが現在開いている求人ページを明示的に保存または再読み込みするときに、現在のタブのURL、タイトル、ページ内の求人候補情報を保存フォームに反映するため。
+
+alarms:
+応募期限通知の確認処理を定期的に実行し、配信対象の通知をRoleTray APIから取得するため。
+
+notifications:
+応募期限の前日18:00と当日9:00に、Chromeのブラウザ通知としてリマインドを表示するため。
 
 storage:
-ログイン前でも求人情報、タグ、同期状態をこのChromeのローカル保存に保持し、ユーザーが後から確認・編集できるようにするため。
+拡張機能用APIキー、クラウド連携状態、連携解除状態など、RoleTray APIへ安全に接続するための最小限の拡張機能状態をChrome local storageに保持するため。
 
-tabs:
-現在のタブのURLとタイトルを読み取り、サイドパネルまたはポップアップから保存対象ページを判定するため。
+scripting:
+ユーザーが保存操作を行った現在のタブに限定して、求人ページのmeta情報、JSON-LD、URL、タイトル、勤務地・給与・雇用形態・応募期限などの候補情報を解析するため。
 
 sidePanel:
 求人ページを開いたまま、サイドパネルで保存フォームや保存済み求人を表示・編集できるようにするため。
 
 ホスト権限:
-ユーザーが任意の求人サイトで保存操作を行えるよう、求人ページの本文、構造化データ、URL、タイトルを読み取り、保存フォームに反映するため。読み取りは保存操作の文脈に限定します。
+`https://api.roletray.com/*` に接続し、ログイン連携、求人、タグ、応募履歴、通知、通知設定をRoleTrayクラウドと同期するため。
 ```
 
 Data use categories to check:
 
 - 個人を特定できる情報
 - 認証に関する情報
-- ウェブ履歴
-- ウェブサイトのコンテンツ
+- ウェブ履歴: ユーザーが保存した求人URL、掲載元ドメイン、関連する保存日時を扱う場合
+- ウェブサイトのコンテンツ: ユーザーが保存操作を行った求人ページのURL、タイトル、meta情報、JSON-LD、勤務地・給与・雇用形態・応募期限などを抽出する場合
+
+Notification data to disclose in the privacy policy and data-use notes:
+
+- 応募期限通知の設定
+- 通知予定、送信、既読、非表示、キャンセルの状態
+- Chrome拡張によるブラウザ通知の配信成功または失敗の状態
 
 Required declarations to check:
 

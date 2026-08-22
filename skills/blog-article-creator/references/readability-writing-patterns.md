@@ -36,7 +36,8 @@ Zenn 記事「書籍『GitHub CI/CD実践ガイド』を読みやすくする技
 - 記事用に生成・編集する画像では、タイトル、軸ラベル、凡例、注釈、吹き出し、矢印ラベル、図中説明を日本語で書く。
 - コード、API 名、ライブラリ名、UI 固有の英語表記など、正確性に必要な固有名詞は原文のまま残してよい。
 - 日本語が文字化けしないよう、画像生成時は日本語フォントを明示する。
-- フォントは `/home/yusuke/.local/share/fonts/codex-japanese/IPAPGothic.ttf` を第一候補にする。存在しない場合は `/home/yusuke/.local/share/fonts/codex-japanese/IPAGothic.ttf`、それも無い場合は `/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf` を使う。
+- `$diagram-generator-html` の成果物では companion skill が検証する同梱フォントを使い、外部フォントで上書きしない。
+- Matplotlib または Pillow では `/home/yusuke/.local/share/fonts/codex-japanese/IPAPGothic.ttf` を第一候補にする。存在しない場合は `/home/yusuke/.local/share/fonts/codex-japanese/IPAGothic.ttf`、それも無い場合は `/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf` を使う。
 
 Matplotlib で画像を生成する場合:
 
@@ -70,7 +71,10 @@ draw.text((x, y), "注目する箇所", font=font, fill=(20, 20, 20))
 
 ## スクリーンショット処理で使う推奨ツール
 
-- Web 画面を再現して撮影する場合は Playwright を使う。
+- 新しいスクリーンショット、説明用図解、定量グラフを作成するときは [visual-assets-workflow.md](visual-assets-workflow.md) に従って担当を振り分ける。
+- Web 画面の撮影には `browser-agent` を使い、マスク検査を通らない Playwright の screenshot や PDF を完成画像にしない。
+- 構成図、処理フロー、比較図などの説明用図解には `$diagram-generator-html` を使う。
+- 関数、分布、観測値など数値の正確さが必要なグラフには Matplotlib を使う。
 - 既存画像のサイズ確認、トリミング、注釈付けには Python + Pillow を優先する。
 - Pillow が使えない場合は ImageMagick の `identify` / `magick` を使う。
 - 画像内テキストの確認が必要な場合だけ OCR を使う。既存環境に `tesseract` がなければ、無理に導入せず目視確認を優先する。
@@ -90,7 +94,7 @@ draw.text((x, y), "注目する箇所", font=font, fill=(20, 20, 20))
 7. 本文と画像のどちらか片方にしかない情報があれば、もう片方へ補う。
 8. 余白、無関係な UI、通知、個人情報、ブラウザ枠、画面の切れ端など読者の注意を逸らす要素を指摘する。
 9. 改善案では、トリミング範囲、番号・枠・矢印・注釈を置く位置、本文の修正文を具体的に書く。
-10. 実際に画像編集を依頼された場合だけ、Pillow または ImageMagick で編集する。レビューだけなら画像ファイルは変更せず、改善指示として返す。
+10. 実際に画像編集を依頼された場合だけ、素材の種類に応じて [visual-assets-workflow.md](visual-assets-workflow.md) の手段を使う。すでに安全性を確認した既存画像の単純なトリミングや注釈には Pillow または ImageMagick を使える。レビューだけなら画像ファイルは変更せず、改善指示として返す。
 
 ## 構成と推敲
 
