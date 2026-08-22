@@ -1,160 +1,80 @@
 # Codex Skills
 
-このディレクトリは、Codex で再利用する個人用スキルを管理します。
-各スキルはサブディレクトリごとに分かれており、`SKILL.md` を入口として、必要に応じて `references/`、`scripts/`、`agents/` を含みます。
+このディレクトリでは、複数のLinux環境で再利用する個人用skillsを管理します。
+各skillはサブディレクトリに置き、`SKILL.md`を入口とします。
 
-## 収録スキル
+必要に応じて、次の補助ディレクトリを含められます。
 
-| スキル | 用途 |
-| --- | --- |
-| `docs-japanese-writing` | 日本語ドキュメント、README、運用ガイド、プロダクト挙動説明を業務読者に伝わる形で作成・改訂します。 |
-| `japanese-conventional-commit` | Conventional Commits 形式で、日本語の件名・本文を持つコミットメッセージを作成・レビューします。 |
-| `playwright-e2e-test-writer` | TypeScript Web アプリ向けに、Playwright E2E テスト、Page Object、fixtures、setup helper を追加・改善します。 |
-| `chrome-web-store` | Chrome 拡張の Web Store 掲載情報、プライバシー申告、拡張 ID 反映手順を確認・再入力します。RoleTray の入力値はプリセットとして参照できます。 |
-| `saas-user-manual-screenshot-writer` | SaaS のエンドユーザー向け日本語マニュアルを、実画面スクリーンショット付きで作成・更新します。 |
-| `blog-article-creator` | リポジトリ管理の技術ブログ記事を、frontmatter と本文構成を整えて作成・改稿します。 |
+- `references/`: 作業時に必要な参考資料
+- `scripts/`: 再現可能な補助処理
+- `assets/`: テンプレートや画像
+- `agents/`: 表示情報と依存ツールの宣言
 
-## 前提
+## 配布対象
 
-- GitHub CLI の `gh` v2.90.0 以降がインストールされていること。
-- GitHub への認証が済んでいること。
-- Codex のスキル配置先が `$CODEX_HOME/skills`、または既定の `~/.codex/skills` であること。
+配布対象とcapabilityは、リポジトリ直下の [manifest.toml](../manifest.toml) を正本とします。
+ディレクトリを追加しただけでは、利用環境へ同期されません。
 
-バージョンは次のコマンドで確認します。
+### core
 
-```bash
-gh --version
-```
+- `blog-article-creator`
+- `create-er-reference-html`
+- `docs-japanese-writing`
+- `japanese-conventional-commit`
+- `playwright-e2e-test-writer`
+- `ts-documentation`
 
-認証状態は次のコマンドで確認します。
+### browser
 
-```bash
-gh auth status
-```
+- `chrome-web-store`
+- `saas-user-manual-screenshot-writer`
 
-未認証の場合は、次のコマンドでログインします。
+`browser`は、ブラウザ操作そのものを成果物の作成や検証に必要とするskillだけに使用します。
+ブラウザを扱うコードを書くという理由だけで、`playwright-e2e-test-writer`をbrowserへ分類しません。
 
-```bash
-gh auth login
-```
+## ユーザー環境への同期
 
-## `gh skill` を使ったインストール
-
-GitHub CLI v2.90.0 以降では、`gh skill` で GitHub リポジトリからスキルを直接インストールできます。
-この機能は public preview です。
-コマンドや挙動は変更される可能性があります。
-
-スキルは AI エージェントの動作に影響する指示、補助スクリプト、参考資料を含みます。
-インストール前に内容を確認してください。
+通常はリポジトリ直下の同期コマンドを使います。
 
 ```bash
-gh skill preview yuu19/codex-settings skills/docs-japanese-writing
+./bin/codex-settings setup
+./bin/codex-settings sync
 ```
 
-Codex のユーザー全体で使う場合は、`--agent codex --scope user` を指定します。
+ユーザースコープの配置先は、現行のCodex仕様に合わせて `~/.agents/skills` とします。
+`~/.codex/skills` は新しい配布先として使用しません。
+
+現在のリポジトリだけで使うskillは、対象リポジトリの `.agents/skills` で管理してください。
+プロジェクト固有のskillをこの共有一覧へ追加しないでください。
+
+## skillの追加
+
+1. `skills/<skill-name>/SKILL.md`を作成する。
+2. frontmatterの`name`とディレクトリ名を一致させる。
+3. `description`へ利用場面と対象外の境界を書く。
+4. 必要な補助ファイルだけを段階的に読む構成にする。
+5. `manifest.toml`へskillとcapabilityを追加する。
+6. テストを実行する。
 
 ```bash
-gh skill install yuu19/codex-settings skills/docs-japanese-writing --agent codex --scope user
+python3 -m unittest discover -s tests -v
 ```
 
-現在の Git リポジトリだけで使う場合は、プロジェクトスコープにインストールします。
-プロジェクトスコープでは、Codex など複数のエージェントが `.agents/skills` を共有します。
+環境にskill validatorがある場合は、対象skillも検証します。
 
 ```bash
-gh skill install yuu19/codex-settings skills/docs-japanese-writing --agent codex --scope project
+python3 ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/<skill-name>
 ```
 
-スキル名を指定せずに実行すると、対象リポジトリ内のスキルを対話的に選択できます。
+## 変更時の規則
 
-```bash
-gh skill install yuu19/codex-settings --agent codex --scope user
-```
+- `manifest.toml`にないskillは配布されません。
+- READMEの一覧とmanifestの不一致はテストで検出します。
+- browser必須のskillだけを`browser`へ分類します。
+- 機密情報、トークン、認証ファイル、個人データを含めません。
+- 外部のskillを取り込む場合は、配布元、commit SHA、ライセンスを記録します。
+- 補助スクリプトは入力を検証し、失敗時に明確なエラーを返します。
+- skillの追加と既存skillの大幅な変更は、可能な限り別のコミットに分けます。
 
-同名スキルを上書きしたい場合は、`--force` を付けます。
-
-```bash
-gh skill install yuu19/codex-settings skills/docs-japanese-writing --agent codex --scope user --force
-```
-
-インストール元を固定したい場合は、タグまたはコミット SHA を指定します。
-
-```bash
-gh skill install yuu19/codex-settings skills/docs-japanese-writing --agent codex --scope user --pin <tag-or-sha>
-```
-
-インストール済みスキルの更新確認と更新は、`gh skill update` で行います。
-
-```bash
-gh skill update
-gh skill update --all
-```
-
-インストール後、Codex が新しいスキルを読み込むには再起動が必要な場合があります。
-
-参考:
-
-- [Manage agent skills with GitHub CLI](https://github.blog/changelog/2026-04-16-manage-agent-skills-with-github-cli/)
-
-## 手動コピーでのインストール
-
-GitHub CLI の `gh skill` が使えない環境では、手動コピーでもインストールできます。
-この手順では `gh skill update` 用の追跡情報は追加されません。
-通常は `gh skill install` を使ってください。
-
-まず、GitHub からこのリポジトリを取得します。
-
-```bash
-tmpdir="$(mktemp -d)"
-gh repo clone yuu19/codex-settings "$tmpdir/codex-settings" -- --depth 1
-mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
-```
-
-必要なスキルだけをインストールする場合は、対象ディレクトリをコピーします。
-
-```bash
-cp -R "$tmpdir/codex-settings/skills/docs-japanese-writing" "${CODEX_HOME:-$HOME/.codex}/skills/"
-cp -R "$tmpdir/codex-settings/skills/japanese-conventional-commit" "${CODEX_HOME:-$HOME/.codex}/skills/"
-```
-
-すべてのスキルをまとめてインストールする場合は、次のコマンドを使います。
-
-```bash
-for skill in \
-  docs-japanese-writing \
-  japanese-conventional-commit \
-  playwright-e2e-test-writer \
-  chrome-web-store \
-  saas-user-manual-screenshot-writer \
-  blog-article-creator
-do
-  cp -R "$tmpdir/codex-settings/skills/$skill" "${CODEX_HOME:-$HOME/.codex}/skills/"
-done
-```
-
-インストール済みの同名スキルを更新したい場合は、古いディレクトリを削除してからコピーし直します。
-
-```bash
-rm -rf "${CODEX_HOME:-$HOME/.codex}/skills/docs-japanese-writing"
-cp -R "$tmpdir/codex-settings/skills/docs-japanese-writing" "${CODEX_HOME:-$HOME/.codex}/skills/"
-```
-
-## 動作確認
-
-インストール先に `SKILL.md` が存在することを確認します。
-
-```bash
-ls "${CODEX_HOME:-$HOME/.codex}/skills/docs-japanese-writing/SKILL.md"
-```
-
-複数のスキルを入れた場合は、次のように一覧を確認します。
-
-```bash
-find "${CODEX_HOME:-$HOME/.codex}/skills" -maxdepth 2 -name SKILL.md -print
-```
-
-## メンテナンス
-
-- スキルを追加したら、この README の「収録スキル」を更新します。
-- `SKILL.md` の frontmatter にある `name` とディレクトリ名は一致させます。
-- 参考資料や補助スクリプトを追加する場合は、スキル本文から必要なファイルだけを読む流れにします。
-- 機密情報、個人用トークン、プロジェクト固有の秘密値はスキルに含めません。
+Codexはskillの変更を通常は自動検出します。
+一覧へ反映されない場合はCodexを再起動してください。
