@@ -192,11 +192,21 @@ class RepositoryManifestTests(unittest.TestCase):
             "--genre tech",
             "quick",
             "full",
+            "max",
+            "fork_turns",
             "ファイルを変更しない",
             "判断台帳",
             "手動チェックリスト",
         ):
             self.assertIn(contract, proofreading)
+
+        for profile_row in (
+            "| `quick_proofreader` | quick校正 | `gpt-5.6-sol` | `high` | `none` |",
+            "| `structure_reviewer` | fullの構造レビュー | `gpt-5.6-sol` | `xhigh` | `none` |",
+            "| `readability_reviewer` | fullの読みやすさレビュー | `gpt-5.6-sol` | `xhigh` | `none` |",
+            "| `blog_fit_reviewer` | fullの技術ブログ適合レビュー | `gpt-5.6-sol` | `xhigh` | `none` |",
+        ):
+            self.assertIn(profile_row, proofreading)
 
     def test_cli_entrypoint_is_executable(self) -> None:
         entrypoint = REPOSITORY_ROOT / "bin" / "codex-settings"
