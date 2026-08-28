@@ -178,6 +178,26 @@ class RepositoryManifestTests(unittest.TestCase):
             (skill / "agents" / "openai.yaml").read_text(encoding="utf-8"),
         )
 
+    def test_blog_article_creator_routes_natural_japanese_proofreading(self) -> None:
+        skill = REPOSITORY_ROOT / "skills" / "blog-article-creator"
+        entrypoint = (skill / "SKILL.md").read_text(encoding="utf-8")
+        proofreading_path = skill / "references" / "natural-japanese-proofreading.md"
+
+        self.assertTrue(proofreading_path.is_file())
+        self.assertIn("references/natural-japanese-proofreading.md", entrypoint)
+
+        proofreading = proofreading_path.read_text(encoding="utf-8")
+        for contract in (
+            "natural-japanese",
+            "--genre tech",
+            "quick",
+            "full",
+            "ファイルを変更しない",
+            "判断台帳",
+            "手動チェックリスト",
+        ):
+            self.assertIn(contract, proofreading)
+
     def test_cli_entrypoint_is_executable(self) -> None:
         entrypoint = REPOSITORY_ROOT / "bin" / "codex-settings"
         self.assertTrue(os.access(entrypoint, os.X_OK))
