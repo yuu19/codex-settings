@@ -1147,6 +1147,9 @@ class SettingsManager:
         print("repository: valid")
         print(f"python: {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")
         print(f"codex: {version}")
+        uv_available = shutil.which("uv") is not None
+        uv_status = "available" if uv_available else "missing (manual checklist fallback)"
+        print(f"uv (natural-japanese lint): {uv_status}")
         state = _load_state(self.layout.state_path)
         selected = (
             state.get("selected_capabilities", [])

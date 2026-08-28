@@ -19,7 +19,7 @@
 
 - `blog-article-creator`
 - `create-er-reference-html`
-- `docs-japanese-writing`
+- `natural-japanese`
 - `japanese-conventional-commit`
 - `playwright-e2e-test-writer`
 - `ts-documentation`
@@ -73,6 +73,7 @@ python3 ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/<
 - browser必須のskillだけを`browser`へ分類します。
 - 機密情報、トークン、認証ファイル、個人データを含めません。
 - 外部のskillを取り込む場合は、配布元、commit SHA、ライセンスを記録します。
+- 外部skillへのローカル変更は、配布元との差分と理由をskill内の出典記録へ残します。
 - 補助スクリプトは入力を検証し、失敗時に明確なエラーを返します。
 - skillの追加と既存skillの大幅な変更は、可能な限り別のコミットに分けます。
 
