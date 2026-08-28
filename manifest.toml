@@ -20,8 +20,8 @@ path = "skills/create-er-reference-html"
 capability = "core"
 
 [[skills]]
-name = "docs-japanese-writing"
-path = "skills/docs-japanese-writing"
+name = "natural-japanese"
+path = "skills/natural-japanese"
 capability = "core"
 
 [[skills]]

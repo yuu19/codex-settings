@@ -16,6 +16,11 @@ WSL2、VPS、SSH先で同じ設定を再現できます。
 Codex CLIとGitHubの認証情報は、このリポジトリでは管理しません。
 ブラウザ機能を有効にする場合だけ、Node.js、`npx`、Google ChromeまたはChromiumが必要です。
 
+`natural-japanese`の機械検査には`uv`を使います。`uv`がない環境でも手動チェックは利用できますが、
+機械検査を含む通常の品質確認を行う場合は、各環境へ`uv`を別途導入してください。
+`setup`と`sync`は`uv`やPythonパッケージを自動インストールしません。
+機械検査を初めて実行するときは、`uv`がskill内で宣言されたPythonパッケージを取得します。
+
 ## 初回セットアップ
 
 publicリポジトリをcloneし、内容を確認してからセットアップを実行します。
@@ -74,7 +79,7 @@ git pull --ff-only
 - HTTPで接続するドキュメント・開発支援MCP
 - `blog-article-creator`
 - `create-er-reference-html`
-- `docs-japanese-writing`
+- `natural-japanese`
 - `japanese-conventional-commit`
 - `playwright-e2e-test-writer`
 - `ts-documentation`
@@ -143,6 +148,9 @@ Git履歴から配布元を確認できない場合は自動移行しません�
 ```bash
 ./bin/codex-settings doctor
 ```
+
+診断では、`natural-japanese`の機械検査に使う`uv`も確認します。
+`missing`の場合はskill内の手動チェックへフォールバックできます。
 
 `sync`はローカルの構文と配置を厳格に検証します。
 外部サービスの認証未完了や一時的な接続障害は、同期失敗ではなく`doctor`の診断結果として扱います。

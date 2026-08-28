@@ -138,8 +138,8 @@ class RepositoryManifestTests(unittest.TestCase):
             {
                 "blog-article-creator",
                 "create-er-reference-html",
-                "docs-japanese-writing",
                 "japanese-conventional-commit",
+                "natural-japanese",
                 "playwright-e2e-test-writer",
                 "ts-documentation",
             },
@@ -162,6 +162,21 @@ class RepositoryManifestTests(unittest.TestCase):
         for skill in manifest.skills:
             for readme in readmes:
                 self.assertIn(f"`{skill.name}`", readme)
+
+    def test_natural_japanese_records_upstream_and_local_policy(self) -> None:
+        skill = REPOSITORY_ROOT / "skills" / "natural-japanese"
+        provenance = (skill / "UPSTREAM.md").read_text(encoding="utf-8")
+        entrypoint = (skill / "SKILL.md").read_text(encoding="utf-8")
+
+        self.assertIn("v1.3.0", provenance)
+        self.assertIn("b54954f8deb4f110f0959f4e4fac295708900120", provenance)
+        self.assertIn("MIT License", (skill / "LICENSE").read_text(encoding="utf-8"))
+        self.assertIn("references/technical-document-policy.md", entrypoint)
+        self.assertTrue((skill / "references" / "technical-document-policy.md").is_file())
+        self.assertIn(
+            "$natural-japanese",
+            (skill / "agents" / "openai.yaml").read_text(encoding="utf-8"),
+        )
 
     def test_cli_entrypoint_is_executable(self) -> None:
         entrypoint = REPOSITORY_ROOT / "bin" / "codex-settings"
@@ -329,6 +344,17 @@ class SynchronizationTests(unittest.TestCase):
 
         second = self.manager.build_plan(require_existing_state=True)
         self.assertFalse(second.has_changes)
+
+    def test_doctor_reports_optional_uv_status(self) -> None:
+        for executable, expected in (
+            ("/usr/bin/uv", "uv (natural-japanese lint): available"),
+            (None, "uv (natural-japanese lint): missing (manual checklist fallback)"),
+        ):
+            with self.subTest(executable=executable):
+                with mock.patch("codex_settings.shutil.which", return_value=executable):
+                    with mock.patch("builtins.print") as print_mock:
+                        self.assertEqual(self.manager.run_doctor(), 0)
+                print_mock.assert_any_call(expected)
 
     def test_browser_capability_can_be_enabled_then_pruned(self) -> None:
         initial = self.manager.build_plan(extra_capabilities=("browser",))
