@@ -52,6 +52,17 @@ class SkillSpec:
 
 
 @dataclass(frozen=True)
+class AgentSpec:
+    name: str
+    relative_path: Path
+    capability: str
+
+    @property
+    def filename(self) -> str:
+        return self.relative_path.name
+
+
+@dataclass(frozen=True)
 class PackageSpec:
     name: str
     version: str
@@ -69,6 +80,7 @@ class Manifest:
     minimum_codex_version: str
     capabilities: dict[str, dict[str, Any]]
     skills: tuple[SkillSpec, ...]
+    agents: tuple[AgentSpec, ...]
     packages: tuple[PackageSpec, ...]
     config_migrations: tuple[ConfigMigration, ...]
 
@@ -94,6 +106,10 @@ class TargetLayout:
     @property
     def skills_dir(self) -> Path:
         return self.home / ".agents" / "skills"
+
+    @property
+    def agents_dir(self) -> Path:
+        return self.codex_home / "agents"
 
     @property
     def legacy_skills_dir(self) -> Path:
@@ -146,10 +162,20 @@ class SkillAction:
 
 
 @dataclass(frozen=True)
+class AgentAction:
+    action: str
+    name: str
+    destination: Path
+    source: Path | None = None
+    source_hash: str | None = None
+
+
+@dataclass(frozen=True)
 class SyncPlan:
     candidate_config: str
     config_changes: tuple[ConfigChange, ...]
     skill_actions: tuple[SkillAction, ...]
+    agent_actions: tuple[AgentAction, ...]
     legacy_removals: tuple[SkillAction, ...]
     next_state: dict[str, Any]
     previous_state: dict[str, Any] | None
@@ -160,6 +186,7 @@ class SyncPlan:
         return bool(
             self.config_changes
             or self.skill_actions
+            or self.agent_actions
             or self.legacy_removals
             or self.state_changed
         )
@@ -270,6 +297,31 @@ def _read_skill_name(skill_file: Path) -> str:
         if line.startswith("name:"):
             return line.split(":", 1)[1].strip().strip('"\'')
     raise SettingsError(f"{skill_file}: frontmatter name is missing")
+
+
+def _read_agent_definition(agent_file: Path) -> dict[str, Any]:
+    if agent_file.is_symlink() or not agent_file.is_file():
+        raise SettingsError(f"custom agent file does not exist or is a symlink: {agent_file}")
+    try:
+        definition = tomllib.loads(agent_file.read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError) as error:
+        raise SettingsError(f"invalid custom agent TOML {agent_file}: {error}") from error
+    for key in ("name", "description", "developer_instructions"):
+        value = definition.get(key)
+        if not isinstance(value, str) or not value.strip():
+            raise SettingsError(f"{agent_file}: custom agent {key} must be a non-empty string")
+    if not SIMPLE_COMPONENT_RE.fullmatch(definition["name"]):
+        raise SettingsError(f"{agent_file}: invalid custom agent name")
+    for key in ("model", "model_reasoning_effort", "sandbox_mode"):
+        if key in definition and not isinstance(definition[key], str):
+            raise SettingsError(f"{agent_file}: custom agent {key} must be a string")
+    return definition
+
+
+def file_hash(path: Path) -> str:
+    if path.is_symlink() or not path.is_file():
+        raise SettingsError(f"managed file does not exist or is a symlink: {path}")
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def directory_hash(path: Path) -> str:
@@ -412,6 +464,37 @@ def load_manifest(repo_root: Path) -> Manifest:
             SkillSpec(name=name, relative_path=Path(relative), capability=capability)
         )
 
+    agents: list[AgentSpec] = []
+    seen_agent_names: set[str] = set()
+    seen_agent_filenames: set[str] = set()
+    for item in raw.get("agents", []):
+        if not isinstance(item, dict):
+            raise SettingsError("each agent entry must be a table")
+        name = item.get("name")
+        relative = item.get("path")
+        capability = item.get("capability")
+        if not all(isinstance(value, str) for value in (name, relative, capability)):
+            raise SettingsError("agent name, path, and capability must be strings")
+        if name in seen_agent_names:
+            raise SettingsError(f"duplicate custom agent in manifest: {name}")
+        if capability not in capabilities:
+            raise SettingsError(f"custom agent {name} has unknown capability: {capability}")
+        if not SIMPLE_COMPONENT_RE.fullmatch(name):
+            raise SettingsError(f"invalid custom agent name: {name}")
+        agent_path = _ensure_within(repo_root, repo_root / relative, "custom agent path")
+        if agent_path.suffix != ".toml":
+            raise SettingsError(f"custom agent must be a TOML file: {relative}")
+        if agent_path.name in seen_agent_filenames:
+            raise SettingsError(f"duplicate custom agent filename: {agent_path.name}")
+        definition = _read_agent_definition(agent_path)
+        if definition["name"] != name:
+            raise SettingsError(f"custom agent name does not match manifest for {name}")
+        seen_agent_names.add(name)
+        seen_agent_filenames.add(agent_path.name)
+        agents.append(
+            AgentSpec(name=name, relative_path=Path(relative), capability=capability)
+        )
+
     packages: list[PackageSpec] = []
     for item in raw.get("packages", []):
         if not isinstance(item, dict):
@@ -457,6 +540,7 @@ def load_manifest(repo_root: Path) -> Manifest:
         minimum_codex_version=minimum,
         capabilities=capabilities,
         skills=tuple(skills),
+        agents=tuple(agents),
         packages=tuple(packages),
         config_migrations=tuple(config_migrations),
     )
@@ -641,6 +725,8 @@ def _load_state(path: Path) -> dict[str, Any] | None:
         raise SettingsError(f"invalid managed_config in state: {path}")
     if not isinstance(state.get("managed_skills", {}), dict):
         raise SettingsError(f"invalid managed_skills in state: {path}")
+    if not isinstance(state.get("managed_agents", {}), dict):
+        raise SettingsError(f"invalid managed_agents in state: {path}")
     return state
 
 
@@ -672,6 +758,13 @@ def atomic_write_bytes(path: Path, content: bytes, mode: int = 0o600) -> None:
     except Exception:
         temporary.unlink(missing_ok=True)
         raise
+
+
+def _remove_path(path: Path) -> None:
+    if path.is_symlink() or path.is_file():
+        path.unlink(missing_ok=True)
+    elif path.exists():
+        shutil.rmtree(path)
 
 
 def _run(
@@ -809,7 +902,9 @@ class SettingsManager:
                     assignments.append(assignment)
         return tuple(assignments)
 
-    def _validate_candidate_with_codex(self, candidate_config: str) -> None:
+    def _validate_candidate_with_codex(
+        self, candidate_config: str, agent_specs: Sequence[AgentSpec]
+    ) -> None:
         if not self.codex_bin:
             raise SettingsError("Codex CLI is required but was not found on PATH")
         with tempfile.TemporaryDirectory(
@@ -820,6 +915,15 @@ class SettingsManager:
             config_path = candidate_codex_home / "config.toml"
             config_path.write_text(candidate_config, encoding="utf-8")
             config_path.chmod(0o600)
+            if agent_specs:
+                candidate_agents_dir = candidate_codex_home / "agents"
+                candidate_agents_dir.mkdir(mode=0o700)
+                for spec in agent_specs:
+                    destination = candidate_agents_dir / spec.filename
+                    destination.write_bytes(
+                        (self.repo_root / spec.relative_path).read_bytes()
+                    )
+                    destination.chmod(0o600)
             environment = os.environ.copy()
             environment["CODEX_HOME"] = str(candidate_codex_home)
             # `doctor` is the Codex 0.148 command that supports strict config
@@ -893,8 +997,11 @@ class SettingsManager:
             previous_managed,
             self.manifest.config_migrations,
         )
+        desired_agent_specs = tuple(
+            agent for agent in self.manifest.agents if agent.capability in selected
+        )
         if validate_with_codex:
-            self._validate_candidate_with_codex(candidate_config)
+            self._validate_candidate_with_codex(candidate_config, desired_agent_specs)
 
         previous_skills = state.get("managed_skills", {}) if state else {}
         desired_specs = tuple(
@@ -983,6 +1090,118 @@ class SettingsManager:
                     SkillAction(action="remove", name=name, destination=destination)
                 )
 
+        previous_agents = state.get("managed_agents", {}) if state else {}
+        desired_agent_names = {agent.name for agent in desired_agent_specs}
+        agent_actions: list[AgentAction] = []
+        next_managed_agents: dict[str, dict[str, str]] = {}
+
+        for spec in desired_agent_specs:
+            source = self.repo_root / spec.relative_path
+            source_hash = file_hash(source)
+            destination = self.layout.agents_dir / spec.filename
+            previous = previous_agents.get(spec.name)
+            if previous is not None and previous.get("filename") != spec.filename:
+                previous_filename = previous.get("filename")
+                if (
+                    not isinstance(previous_filename, str)
+                    or Path(previous_filename).name != previous_filename
+                    or not previous_filename.endswith(".toml")
+                ):
+                    raise SettingsError(
+                        f"invalid managed custom agent filename for {spec.name}"
+                    )
+                previous_destination = self.layout.agents_dir / previous_filename
+                recorded_path = previous.get("path")
+                if recorded_path is not None and (
+                    Path(recorded_path).resolve() != previous_destination.resolve()
+                ):
+                    raise SettingsError(
+                        "refusing to rename unexpected custom agent path: "
+                        f"{recorded_path}"
+                    )
+                if previous_destination.exists() or previous_destination.is_symlink():
+                    previous_hash = file_hash(previous_destination)
+                    if previous_hash != previous.get("sha256"):
+                        raise SettingsError(
+                            "managed custom agent was modified locally and cannot be renamed: "
+                            f"{previous_destination}"
+                        )
+                    agent_actions.append(
+                        AgentAction(
+                            action="remove",
+                            name=spec.name,
+                            destination=previous_destination,
+                        )
+                    )
+                previous = None
+            if destination.exists() or destination.is_symlink():
+                destination_hash = file_hash(destination)
+                if previous is not None:
+                    if destination_hash != previous.get("sha256"):
+                        raise SettingsError(
+                            f"managed custom agent was modified locally: {destination}"
+                        )
+                    if destination_hash != source_hash:
+                        agent_actions.append(
+                            AgentAction(
+                                action="update",
+                                name=spec.name,
+                                destination=destination,
+                                source=source,
+                                source_hash=source_hash,
+                            )
+                        )
+                elif destination_hash != source_hash:
+                    raise SettingsError(
+                        f"unmanaged custom agent conflicts with {spec.name}: {destination}"
+                    )
+            else:
+                agent_actions.append(
+                    AgentAction(
+                        action="add",
+                        name=spec.name,
+                        destination=destination,
+                        source=source,
+                        source_hash=source_hash,
+                    )
+                )
+
+            next_managed_agents[spec.name] = {
+                "capability": spec.capability,
+                "filename": spec.filename,
+                "path": str(destination),
+                "sha256": source_hash,
+            }
+
+        for name, previous in sorted(previous_agents.items()):
+            if name in desired_agent_names:
+                continue
+            filename = previous.get("filename")
+            if (
+                not isinstance(filename, str)
+                or Path(filename).name != filename
+                or not filename.endswith(".toml")
+            ):
+                raise SettingsError(f"invalid managed custom agent filename for {name}")
+            destination = self.layout.agents_dir / filename
+            recorded_path = previous.get("path")
+            if recorded_path is not None and (
+                Path(recorded_path).resolve() != destination.resolve()
+            ):
+                raise SettingsError(
+                    f"refusing to remove unexpected custom agent path: {recorded_path}"
+                )
+            if destination.exists() or destination.is_symlink():
+                current_hash = file_hash(destination)
+                if current_hash != previous.get("sha256"):
+                    raise SettingsError(
+                        "managed custom agent was modified locally and cannot be removed: "
+                        f"{destination}"
+                    )
+                agent_actions.append(
+                    AgentAction(action="remove", name=name, destination=destination)
+                )
+
         next_state: dict[str, Any] = {
             "schema_version": SCHEMA_VERSION,
             "source_commit": revision,
@@ -994,6 +1213,7 @@ class SettingsManager:
                 for assignment in desired_assignments
             },
             "managed_skills": next_managed_skills,
+            "managed_agents": next_managed_agents,
         }
         semantic_changed = _semantic_state(state) != next_state
         if semantic_changed:
@@ -1005,6 +1225,7 @@ class SettingsManager:
             candidate_config=candidate_config,
             config_changes=config_changes,
             skill_actions=tuple(skill_actions),
+            agent_actions=tuple(agent_actions),
             legacy_removals=tuple(legacy_removals),
             next_state=next_state,
             previous_state=state,
@@ -1017,6 +1238,7 @@ class SettingsManager:
         self.layout.state_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.layout.backups_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.layout.skills_dir.mkdir(parents=True, exist_ok=True)
+        self.layout.agents_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.layout.codex_home.mkdir(parents=True, exist_ok=True, mode=0o700)
 
         original_config = (
@@ -1066,6 +1288,30 @@ class SettingsManager:
                     os.replace(destination, backup)
                     moved_backups.append((destination, backup))
 
+            for action in plan.agent_actions:
+                destination = action.destination
+                if action.action in {"add", "update"}:
+                    if action.source is None:
+                        raise SettingsError(f"missing source for {action.name}")
+                    destination.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+                    if destination.exists() or destination.is_symlink():
+                        backup = destination.parent / (
+                            f".{destination.name}.codex-settings-old-{uuid.uuid4().hex}"
+                        )
+                        os.replace(destination, backup)
+                        moved_backups.append((destination, backup))
+                    else:
+                        created_destinations.append(destination)
+                    atomic_write_bytes(destination, action.source.read_bytes(), mode=0o600)
+                elif action.action == "remove" and (
+                    destination.exists() or destination.is_symlink()
+                ):
+                    backup = destination.parent / (
+                        f".{destination.name}.codex-settings-old-{uuid.uuid4().hex}"
+                    )
+                    os.replace(destination, backup)
+                    moved_backups.append((destination, backup))
+
             timestamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
             backup_record_path = self.layout.backups_dir / f"{timestamp}.json"
             backup_record = {
@@ -1085,6 +1331,10 @@ class SettingsManager:
                     {"name": action.name, "action": action.action}
                     for action in (*plan.skill_actions, *plan.legacy_removals)
                 ],
+                "agent_actions": [
+                    {"name": action.name, "action": action.action}
+                    for action in plan.agent_actions
+                ],
             }
             atomic_write_bytes(backup_record_path, _json_bytes(backup_record), mode=0o600)
             atomic_write_bytes(
@@ -1100,26 +1350,21 @@ class SettingsManager:
             else:
                 atomic_write_bytes(self.layout.state_path, original_state, mode=0o600)
             for destination in reversed(created_destinations):
-                if destination.exists():
-                    shutil.rmtree(destination)
+                _remove_path(destination)
             for destination, backup in reversed(moved_backups):
-                if destination.exists():
-                    shutil.rmtree(destination)
+                _remove_path(destination)
                 if backup.exists():
                     os.replace(backup, destination)
             if backup_record_path is not None:
                 backup_record_path.unlink(missing_ok=True)
             for temporary in temporary_paths:
-                if temporary.exists():
-                    shutil.rmtree(temporary)
+                _remove_path(temporary)
             raise SettingsError(f"synchronization failed and was rolled back: {error}") from error
         else:
             for _, backup in moved_backups:
-                if backup.exists():
-                    shutil.rmtree(backup)
+                _remove_path(backup)
             for temporary in temporary_paths:
-                if temporary.exists():
-                    shutil.rmtree(temporary)
+                _remove_path(temporary)
 
     def set_capability(self, name: str, enabled: bool) -> None:
         state = _load_state(self.layout.state_path)
@@ -1206,6 +1451,8 @@ def print_plan(plan: SyncPlan) -> None:
         )
     for action in plan.skill_actions:
         print(f"  skill {action.action}: {action.name} -> {action.destination}")
+    for action in plan.agent_actions:
+        print(f"  custom agent {action.action}: {action.name} -> {action.destination}")
     for action in plan.legacy_removals:
         print(f"  skill remove legacy copy: {action.name} -> {action.destination}")
     if plan.state_changed:
@@ -1224,7 +1471,10 @@ def _repo_root_from_script() -> Path:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="codex-settings",
-        description="Safely synchronize portable Codex settings and shared skills.",
+        description=(
+            "Safely synchronize portable Codex settings, shared skills, "
+            "and custom agents."
+        ),
     )
     parser.add_argument(
         "--repo-root",

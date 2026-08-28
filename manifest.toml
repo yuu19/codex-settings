@@ -1,5 +1,5 @@
 schema_version = 1
-minimum_codex_version = "0.148.0"
+minimum_codex_version = "0.150.1"
 
 [capabilities.core]
 default = true
@@ -48,6 +48,41 @@ capability = "browser"
 name = "saas-user-manual-screenshot-writer"
 path = "skills/saas-user-manual-screenshot-writer"
 capability = "browser"
+
+[[agents]]
+name = "quick_proofreader"
+path = ".codex/agents/quick-proofreader.toml"
+capability = "core"
+
+[[agents]]
+name = "structure_reviewer"
+path = ".codex/agents/structure-reviewer.toml"
+capability = "core"
+
+[[agents]]
+name = "structure_reviewer_max"
+path = ".codex/agents/structure-reviewer-max.toml"
+capability = "core"
+
+[[agents]]
+name = "readability_reviewer"
+path = ".codex/agents/readability-reviewer.toml"
+capability = "core"
+
+[[agents]]
+name = "readability_reviewer_max"
+path = ".codex/agents/readability-reviewer-max.toml"
+capability = "core"
+
+[[agents]]
+name = "blog_fit_reviewer"
+path = ".codex/agents/blog-fit-reviewer.toml"
+capability = "core"
+
+[[agents]]
+name = "blog_fit_reviewer_max"
+path = ".codex/agents/blog-fit-reviewer-max.toml"
+capability = "core"
 
 [[packages]]
 name = "@playwright/mcp"

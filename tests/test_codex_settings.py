@@ -6,6 +6,7 @@ import subprocess
 import sys
 import tempfile
 import textwrap
+import tomllib
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -49,6 +50,23 @@ def create_skill(root: Path, name: str, marker: str = "v1") -> None:
     )
 
 
+def create_agent(root: Path, name: str, marker: str = "v1") -> None:
+    write(
+        root / ".codex" / "agents" / f"{name}.toml",
+        f'''\
+        name = "{name}"
+        description = "Test custom agent {name}."
+        model = "gpt-test"
+        model_reasoning_effort = "high"
+        sandbox_mode = "read-only"
+        developer_instructions = """
+        Review only.
+        {marker}
+        """
+        ''',
+    )
+
+
 def create_fake_codex(path: Path) -> None:
     write(
         path,
@@ -71,6 +89,8 @@ def create_fake_codex(path: Path) -> None:
 def create_repository(root: Path) -> None:
     create_skill(root, "core-skill")
     create_skill(root, "browser-skill")
+    create_agent(root, "core_agent")
+    create_agent(root, "browser_agent")
     write(
         root / "config.toml",
         """
@@ -113,6 +133,16 @@ def create_repository(root: Path) -> None:
         path = "skills/browser-skill"
         capability = "browser"
 
+        [[agents]]
+        name = "core_agent"
+        path = ".codex/agents/core_agent.toml"
+        capability = "core"
+
+        [[agents]]
+        name = "browser_agent"
+        path = ".codex/agents/browser_agent.toml"
+        capability = "browser"
+
         [[packages]]
         name = "@playwright/mcp"
         version = "1.2.3"
@@ -152,6 +182,37 @@ class RepositoryManifestTests(unittest.TestCase):
             {(package.name, package.version) for package in manifest.packages},
             {("@playwright/mcp", "0.0.79"), ("chrome-devtools-mcp", "1.7.0")},
         )
+        self.assertEqual(manifest.minimum_codex_version, "0.150.1")
+        self.assertEqual(
+            {agent.name for agent in manifest.agents},
+            {
+                "quick_proofreader",
+                "structure_reviewer",
+                "structure_reviewer_max",
+                "readability_reviewer",
+                "readability_reviewer_max",
+                "blog_fit_reviewer",
+                "blog_fit_reviewer_max",
+            },
+        )
+
+    def test_real_custom_agents_use_pinned_read_only_profiles(self) -> None:
+        manifest = load_manifest(REPOSITORY_ROOT)
+        for agent in manifest.agents:
+            definition = tomllib.loads(
+                (REPOSITORY_ROOT / agent.relative_path).read_text(encoding="utf-8")
+            )
+            self.assertEqual(definition["name"], agent.name)
+            self.assertEqual(definition["model"], "gpt-5.6-sol")
+            self.assertEqual(definition["sandbox_mode"], "read-only")
+            expected_effort = (
+                "high"
+                if agent.name == "quick_proofreader"
+                else "max"
+                if agent.name.endswith("_max")
+                else "xhigh"
+            )
+            self.assertEqual(definition["model_reasoning_effort"], expected_effort)
 
     def test_readmes_list_every_managed_skill(self) -> None:
         manifest = load_manifest(REPOSITORY_ROOT)
@@ -200,13 +261,14 @@ class RepositoryManifestTests(unittest.TestCase):
         ):
             self.assertIn(contract, proofreading)
 
-        for profile_row in (
-            "| `quick_proofreader` | quick校正 | `gpt-5.6-sol` | `high` | `none` |",
-            "| `structure_reviewer` | fullの構造レビュー | `gpt-5.6-sol` | `xhigh` | `none` |",
-            "| `readability_reviewer` | fullの読みやすさレビュー | `gpt-5.6-sol` | `xhigh` | `none` |",
-            "| `blog_fit_reviewer` | fullの技術ブログ適合レビュー | `gpt-5.6-sol` | `xhigh` | `none` |",
+        for agent_name in (
+            "quick_proofreader",
+            "structure_reviewer",
+            "readability_reviewer",
+            "blog_fit_reviewer",
         ):
-            self.assertIn(profile_row, proofreading)
+            self.assertIn(agent_name, proofreading)
+        self.assertIn("_max", proofreading)
 
     def test_cli_entrypoint_is_executable(self) -> None:
         entrypoint = REPOSITORY_ROOT / "bin" / "codex-settings"
@@ -371,6 +433,8 @@ class SynchronizationTests(unittest.TestCase):
         self.assertIn('model = "gpt-test"', installed_config)
         self.assertTrue((self.layout.skills_dir / "core-skill" / "SKILL.md").is_file())
         self.assertFalse((self.layout.skills_dir / "browser-skill").exists())
+        self.assertTrue((self.layout.agents_dir / "core_agent.toml").is_file())
+        self.assertFalse((self.layout.agents_dir / "browser_agent.toml").exists())
 
         second = self.manager.build_plan(require_existing_state=True)
         self.assertFalse(second.has_changes)
@@ -390,6 +454,7 @@ class SynchronizationTests(unittest.TestCase):
         initial = self.manager.build_plan(extra_capabilities=("browser",))
         self.manager.apply_plan(initial)
         self.assertTrue((self.layout.skills_dir / "browser-skill").is_dir())
+        self.assertTrue((self.layout.agents_dir / "browser_agent.toml").is_file())
         self.assertIn(
             "[mcp_servers.playwright]",
             self.layout.config_path.read_text(encoding="utf-8"),
@@ -398,8 +463,10 @@ class SynchronizationTests(unittest.TestCase):
         self.manager.set_capability("browser", False)
         prune = self.manager.build_plan(require_existing_state=True)
         self.assertIn("remove", {action.action for action in prune.skill_actions})
+        self.assertIn("remove", {action.action for action in prune.agent_actions})
         self.manager.apply_plan(prune)
         self.assertFalse((self.layout.skills_dir / "browser-skill").exists())
+        self.assertFalse((self.layout.agents_dir / "browser_agent.toml").exists())
         self.assertNotIn(
             "[mcp_servers.playwright]",
             self.layout.config_path.read_text(encoding="utf-8"),
@@ -410,6 +477,52 @@ class SynchronizationTests(unittest.TestCase):
         with self.assertRaisesRegex(SettingsError, "unmanaged skill conflicts"):
             self.manager.build_plan()
         self.assertFalse(self.layout.state_path.exists())
+
+    def test_unmanaged_custom_agent_conflict_stops_before_changes(self) -> None:
+        write(
+            self.layout.agents_dir / "core_agent.toml",
+            'name = "core_agent"\ndescription = "Local"\ndeveloper_instructions = "Local"\n',
+        )
+        with self.assertRaisesRegex(SettingsError, "unmanaged custom agent conflicts"):
+            self.manager.build_plan()
+        self.assertFalse(self.layout.state_path.exists())
+
+    def test_unrelated_custom_agent_is_preserved(self) -> None:
+        local_agent = self.layout.agents_dir / "personal.toml"
+        write(
+            local_agent,
+            'name = "personal"\ndescription = "Local"\ndeveloper_instructions = "Local"\n',
+        )
+        plan = self.manager.build_plan()
+        self.manager.apply_plan(plan)
+        self.assertTrue(local_agent.is_file())
+
+    def test_managed_custom_agent_updates_atomically(self) -> None:
+        initial = self.manager.build_plan()
+        self.manager.apply_plan(initial)
+
+        create_agent(self.repo, "core_agent", marker="v2")
+        update = self.manager.build_plan(
+            allow_dirty=True,
+            require_existing_state=True,
+        )
+        self.assertEqual(
+            [(action.name, action.action) for action in update.agent_actions],
+            [("core_agent", "update")],
+        )
+        self.manager.apply_plan(update)
+
+        installed = self.layout.agents_dir / "core_agent.toml"
+        self.assertIn("v2", installed.read_text(encoding="utf-8"))
+        self.assertEqual(installed.stat().st_mode & 0o777, 0o600)
+
+    def test_modified_managed_custom_agent_is_rejected(self) -> None:
+        initial = self.manager.build_plan()
+        self.manager.apply_plan(initial)
+        write(self.layout.agents_dir / "core_agent.toml", "locally modified\n")
+
+        with self.assertRaisesRegex(SettingsError, "modified locally"):
+            self.manager.build_plan(require_existing_state=True)
 
     def test_symlinked_destination_is_not_overwritten(self) -> None:
         create_skill(self.base / "external", "core-skill")
@@ -444,6 +557,7 @@ class SynchronizationTests(unittest.TestCase):
 
         self.assertEqual(self.layout.config_path.read_bytes(), original_config)
         self.assertFalse((self.layout.skills_dir / "core-skill").exists())
+        self.assertFalse((self.layout.agents_dir / "core_agent.toml").exists())
         self.assertFalse(self.layout.state_path.exists())
 
     def test_legacy_copy_is_removed_only_when_it_matches(self) -> None:
