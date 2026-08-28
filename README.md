@@ -1,6 +1,6 @@
 # codex-settings
 
-自分が管理するLinux環境へ、Codexの共通設定と共有skillsを安全に導入するためのリポジトリです。
+自分が管理するLinux環境へ、Codexの共通設定、共有skills、custom agentsを安全に導入するためのリポジトリです。
 WSL2、VPS、SSH先で同じ設定を再現できます。
 
 機密情報、認証情報、承認規則、sandbox、ネットワーク権限、プロジェクトの信頼設定は同期しません。
@@ -10,7 +10,7 @@ WSL2、VPS、SSH先で同じ設定を再現できます。
 
 - Linux
 - Git
-- Codex CLI 0.148.0以上
+- Codex CLI 0.150.1以上
 - Python 3.11以上
 
 Codex CLIとGitHubの認証情報は、このリポジトリでは管理しません。
@@ -83,6 +83,7 @@ git pull --ff-only
 - `japanese-conventional-commit`
 - `playwright-e2e-test-writer`
 - `ts-documentation`
+- `blog-article-creator`の校正に使う読み取り専用custom agents
 
 ### browser
 
@@ -101,7 +102,7 @@ git pull --ff-only
 ./bin/codex-settings sync
 ```
 
-無効化すると、次の同期でこのリポジトリが管理しているbrowser設定とskillsだけを撤去します。
+無効化すると、次の同期でこのリポジトリが管理しているbrowser設定、skills、custom agentsだけを撤去します。
 
 ```bash
 ./bin/codex-settings capability disable browser
@@ -114,6 +115,7 @@ git pull --ff-only
 | --- | --- | --- |
 | Codex設定 | `~/.codex/config.toml` | `manifest.toml`が所有するキーだけを更新 |
 | 共有skills | `~/.agents/skills` | 選択中のcapabilityに属するディレクトリを同期 |
+| custom agents | `~/.codex/agents` | 選択中のcapabilityに属するTOMLファイルを同期 |
 | 同期state | `${XDG_STATE_HOME:-~/.local/state}/codex-settings/state.json` | 所有対象、反映元コミット、ハッシュを記録 |
 | 変更記録 | `${XDG_STATE_HOME:-~/.local/state}/codex-settings/backups/` | 管理対象の変更内容だけを記録 |
 
@@ -130,7 +132,7 @@ git pull --ff-only
 - 認証、プラグイン、marketplace、通知、UIの状態
 
 このリポジトリが以前に同期した項目をmanifestから削除した場合は、次の同期で自動撤去します。
-ユーザーが追加した項目や、内容が異なる同名skillは削除せず、競合として停止します。
+ユーザーが追加した項目や、内容が異なる同名skill・custom agentは削除せず、競合として停止します。
 
 旧配置の `~/.codex/skills` に、現在または過去のcodex-settingsコミットと一致するskillがある場合は、`~/.agents/skills` へ移行して旧コピーを撤去します。
 Git履歴から配布元を確認できない場合は自動移行しません。
@@ -158,10 +160,10 @@ Git履歴から配布元を確認できない場合は自動移行しません�
 ## 安全性
 
 - 適用候補はTOMLとして検証した後、実行中のCodex CLIでもstrict検証します。
-- 設定、skills、stateの途中更新に失敗した場合は、変更前の状態へ戻します。
+- 設定、skills、custom agents、stateの途中更新に失敗した場合は、変更前の状態へ戻します。
 - stateと変更記録には、認証ファイルや管理対象外の設定値を保存しません。
 - browser MCPのローカルパッケージはexact versionへ固定します。
-- `manifest.toml`をskills、capability、対応バージョンの正本とします。
+- `manifest.toml`をskills、custom agents、capability、対応バージョンの正本とします。
 
 ## 開発と検証
 
@@ -179,5 +181,6 @@ skillsの追加・保守方法は [skills/README.md](skills/README.md) を参照
 ## 参考資料
 
 - [OpenAI Codex configuration reference](https://developers.openai.com/codex/config-reference/)
+- [OpenAI Codex subagents](https://developers.openai.com/codex/multi-agent/)
 - [OpenAI Codex skills](https://developers.openai.com/codex/skills/)
 - [Context7 installation](https://github.com/upstash/context7#installation)

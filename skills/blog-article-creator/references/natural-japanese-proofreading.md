@@ -32,26 +32,25 @@
 
 fullを始める前に、`natural-japanese`に記載された所要時間の目安をユーザーへ伝える。
 
-## subagentプロファイル
+## custom agentの選択
 
-校正subagentは、次の固定プロファイルで起動する。プロファイル名は起動時のtask nameにも使い、再レビューでは同じsubagentを再利用する。
+校正には`~/.codex/agents`へ導入された次のcustom agentを使う。モデル、推論強度、sandbox、役割の指示は各agent TOMLを正本とし、このreferenceから起動時に上書きしない。再レビューでは同じsubagentを再利用する。
 
-| プロファイル | 用途 | モデル | 推論強度 | `fork_turns` |
-| --- | --- | --- | --- | --- |
-| `quick_proofreader` | quick校正 | `gpt-5.6-sol` | `high` | `none` |
-| `structure_reviewer` | fullの構造レビュー | `gpt-5.6-sol` | `xhigh` | `none` |
-| `readability_reviewer` | fullの読みやすさレビュー | `gpt-5.6-sol` | `xhigh` | `none` |
-| `blog_fit_reviewer` | fullの技術ブログ適合レビュー | `gpt-5.6-sol` | `xhigh` | `none` |
+| モード | 構造 | 読みやすさ | 技術ブログ適合 |
+| --- | --- | --- | --- |
+| quick | `quick_proofreader` | - | - |
+| full | `structure_reviewer` | `readability_reviewer` | `blog_fit_reviewer` |
+| 最高品質のfull | `structure_reviewer_max` | `readability_reviewer_max` | `blog_fit_reviewer_max` |
 
-`fork_turns: none`で会話履歴を引き継がない代わりに、親は記事本文、変更範囲、変更目的、守るべき技術用語、関連するlint・outline・termsの出力を明示的に渡す。記事に不要な会話や別タスクの情報は渡さない。
+起動時は`fork_turns: none`として会話履歴を引き継がない。代わりに、親は記事本文、変更範囲、変更目的、守るべき技術用語、関連するlint・outline・termsの出力を明示的に渡す。記事に不要な会話や別タスクの情報は渡さない。
 
-ユーザーが「最高品質」「最大」など、品質を最優先したfull校正を明示した場合に限り、3つのfullプロファイルの推論強度を`max`へ上げる。通常のfull校正では`xhigh`を使う。
+ユーザーが「最高品質」「最大」など、品質を最優先したfull校正を明示した場合に限り、名前が`_max`で終わる3つのagentを使う。通常のfull校正では`_max`のないagentを使う。
 
-指定したモデルまたは推論強度を利用できない場合、ユーザーが構成を明示していなければ、親のモデル設定を継承して校正を続け、完了報告に縮退内容を記載する。ユーザーがモデルまたは推論強度を明示した場合は、無断で代替せず、校正を完了扱いにしない。
+指定したcustom agentを利用できない場合、ユーザーが構成を明示していなければ、同じ役割の一時subagentへ縮退して校正を続け、完了報告に縮退内容を記載する。ユーザーがagent、モデル、または推論強度を明示した場合は、無断で代替せず、校正を完了扱いにしない。
 
 ## quick
 
-1. 親は`quick_proofreader`を指定プロファイルで起動し、記事ファイル、変更箇所、変更目的、守るべき技術用語を渡す。
+1. 親はcustom agent `quick_proofreader`を起動し、記事ファイル、変更箇所、変更目的、守るべき技術用語を渡す。
 2. subagentは `natural-japanese` の `SKILL.md` を読み、子subagentを起動せずquickとして作業する。
 3. subagentはskillディレクトリを基準に、`uv run scripts/lint.py --json --genre tech <記事>`を実行し、記事全体をスケルトン通読する。
 4. subagentは指摘だけを返し、親が判断台帳へ統合して記事を変更する。
@@ -59,7 +58,7 @@ fullを始める前に、`natural-japanese`に記載された所要時間の目�
 
 ## full
 
-fullでは、校正用の中間subagentを置かない。親が調整役となり、利用可能な並列枠の中で次の3つの専門subagentを指定プロファイルで直接起動する。
+fullでは、校正用の中間subagentを置かない。親が調整役となり、利用可能な並列枠の中で選択した3つのcustom agentを直接起動する。以下は通常のfullで使うagent名であり、最高品質のfullでは対応する`_max` agentへ置き換える。
 
 1. `structure_reviewer`: 見出しと段落の流れ、主メッセージ、濃淡、反復を確認する。
 2. `readability_reviewer`: 語順、読点、一文一義、主述の距離、冗長さ、リズムを確認する。
